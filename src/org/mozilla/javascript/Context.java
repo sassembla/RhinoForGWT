@@ -60,6 +60,8 @@ import org.mozilla.javascript.debug.DebuggableScript;
 import org.mozilla.javascript.debug.Debugger;
 import org.mozilla.javascript.xml.XMLLib;
 
+import com.kissaki.subFrame.Debug;
+
 /**
  * This class represents the runtime context of an executing script.
  *
@@ -85,6 +87,9 @@ import org.mozilla.javascript.xml.XMLLib;
 
 public class Context
 {
+	
+	Debug debug;
+	
     /**
      * Language versions.
      *
@@ -346,6 +351,7 @@ public class Context
      */
     protected Context(ContextFactory factory)
     {
+    	debug = new Debug (this);
         if(factory == null) {
             throw new IllegalArgumentException("factory == null");
         }
@@ -1345,6 +1351,7 @@ public class Context
             // For compatibility IllegalArgumentException can not be thrown here
             lineno = 0;
         }
+        debug.trace("コンパイル開始");
         return compileString(source, null, null, sourceName, lineno,
                              securityDomain);
     }
@@ -2387,11 +2394,13 @@ public class Context
         }
 
         String encodedSource = p.getEncodedSource();
-
+        
+        //debug.trace("encodedSource_"+encodedSource);
+        
         Object bytecode = compiler.compile(compilerEnv,
                                            tree, encodedSource,
                                            returnFunction);
-
+        
         if (debugger != null) {
             if (sourceString == null) Kit.codeBug();
             if (bytecode instanceof DebuggableScript) {

@@ -45,6 +45,9 @@ package org.mozilla.javascript.optimizer;
 
 import org.mozilla.javascript.*;
 import org.mozilla.classfile.*;
+
+import com.kissaki.subFrame.Debug;
+
 import java.util.*;
 import java.lang.reflect.Constructor;
 
@@ -1613,6 +1616,9 @@ class BodyCodegen
             saveCurrentCodeOffset();
 
         if (hasVarsInRegs) {
+        	Debug debug = new Debug(this);
+        	debug.trace("Codegen_BodyCodegen_	functionName_"+fnCurrent.fnode.getFunctionName());
+        	
             // No need to create activation. Pad arguments if need be.
             int parmCount = scriptOrFn.getParamCount();
             if (parmCount > 0 && !inDirectCallFunction) {

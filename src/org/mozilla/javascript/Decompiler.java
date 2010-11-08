@@ -41,6 +41,8 @@
 
 package org.mozilla.javascript;
 
+import com.kissaki.subFrame.Debug;
+
 /**
  * The following class save decompilation information about the source.
  * Source information is returned from the parser as a String
@@ -76,6 +78,7 @@ package org.mozilla.javascript;
  */
 public class Decompiler
 {
+	Debug debug = new Debug(this);
     /**
      * Flag to indicate that the decompilation should omit the
      * function header and trailing brace.
@@ -108,7 +111,7 @@ public class Decompiler
 
     String getEncodedSource()
     {
-        return sourceToString(0);
+    	return sourceToString(0);
     }
 
     int getCurrentOffset()
@@ -120,6 +123,7 @@ public class Decompiler
     {
         int savedOffset = getCurrentOffset();
         addToken(Token.FUNCTION);
+        debug.trace("/FUNCTION>append/_"+functionType);
         append((char)functionType);
         return savedOffset;
     }
@@ -127,6 +131,7 @@ public class Decompiler
     int markFunctionEnd(int functionStart)
     {
         int offset = getCurrentOffset();
+        debug.trace("/FUNCTION_END>append/_"+functionStart);
         append((char)FUNCTION_END);
         return offset;
     }
@@ -135,7 +140,7 @@ public class Decompiler
     {
         if (!(0 <= token && token <= Token.LAST_TOKEN))
             throw new IllegalArgumentException();
-
+        debug.trace("/TOKEN>append/_"+token);
         append((char)token);
     }
 
@@ -143,7 +148,7 @@ public class Decompiler
     {
         if (!(0 <= token && token <= Token.LAST_TOKEN))
             throw new IllegalArgumentException();
-
+        debug.trace("addEOL>append");
         append((char)token);
         append((char)Token.EOL);
     }
@@ -151,18 +156,21 @@ public class Decompiler
     void addName(String str)
     {
         addToken(Token.NAME);
+        debug.trace("/NAME>appendString/"+str);
         appendString(str);
     }
 
     void addString(String str)
     {
         addToken(Token.STRING);
+        debug.trace("/STRING>appendString/"+str);
         appendString(str);
     }
 
     void addRegexp(String regexp, String flags)
     {
         addToken(Token.REGEXP);
+        debug.trace("/REGEXP>appendString regexp,"+regexp+" flags,"+flags+"/");
         appendString('/' + regexp + '/' + flags);
     }
 
@@ -192,6 +200,7 @@ public class Decompiler
             // if it's floating point, save as a Double bit pattern.
             // (12/15/97 our scanner only returns Double for f.p.)
             lbits = Double.doubleToLongBits(n);
+            debug.trace("/D>append/");
             append('D');
             append((char)(lbits >> 48));
             append((char)(lbits >> 32));
@@ -206,10 +215,12 @@ public class Decompiler
             // will it fit in a char?
             // this gives a short encoding for integer values up to 2^16.
             if (lbits <= Character.MAX_VALUE) {
+            	debug.trace("/S/");
                 append('S');
                 append((char)lbits);
             }
             else { // Integral, but won't fit in a char. Store as a long.
+            	debug.trace("/J?/");
                 append('J');
                 append((char)(lbits >> 48));
                 append((char)(lbits >> 32));
@@ -221,6 +232,7 @@ public class Decompiler
 
     private void appendString(String str)
     {
+    	debug.trace("sourceBuffer_appendString_"+str);
         int L = str.length();
         int lengthEncodingSize = 1;
         if (L >= 0x8000) {
@@ -244,6 +256,7 @@ public class Decompiler
 
     private void append(char c)
     {
+    	debug.trace("sourceBuffer_append_"+c);
         if (sourceTop == sourceBuffer.length) {
             increaseSourceCapacity(sourceTop + 1);
         }
@@ -253,6 +266,7 @@ public class Decompiler
 
     private void increaseSourceCapacity(int minimalCapacity)
     {
+    	debug.trace("sourceBuffer_increaseSourceCapacity_"+minimalCapacity);
         // Call this only when capacity increase is must
         if (minimalCapacity <= sourceBuffer.length) Kit.codeBug();
         int newCapacity = sourceBuffer.length * 2;
@@ -266,7 +280,8 @@ public class Decompiler
 
     private String sourceToString(int offset)
     {
-        if (offset < 0 || sourceTop < offset) Kit.codeBug();
+    	debug.trace("sourceBuffer_sourceToString");
+    	if (offset < 0 || sourceTop < offset) Kit.codeBug();
         return new String(sourceBuffer, offset, sourceTop - offset);
     }
 
