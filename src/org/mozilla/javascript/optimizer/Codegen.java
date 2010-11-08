@@ -44,8 +44,11 @@
 package org.mozilla.javascript.optimizer;
 
 import org.mozilla.javascript.*;
+import org.mozilla.javascript.Node.Symbol;
 import org.mozilla.classfile.*;
 
+//import com.kissaki.main.collection.CollectionNode;
+//import com.kissaki.main.collection.CounterClass;
 import com.kissaki.subFrame.Debug;
 
 import java.util.*;
@@ -1328,6 +1331,8 @@ public class Codegen implements Evaluator
 
 class BodyCodegen
 {
+	Debug debug = new Debug(this);
+	
     void generateBodyCode()
     {
         isGenerator = Codegen.isGenerator(scriptOrFn);
@@ -1614,10 +1619,24 @@ class BodyCodegen
 
         if (compilerEnv.isGenerateObserverCount())
             saveCurrentCodeOffset();
-
+        
+        if (fnCurrent != null) {
+        	
+        	/**
+        	 * ここで、絶対的なメソッド名が取得できる。
+        	 * 
+        	 * 後は、引数の型がでればOK。つまり移植。明日で終わらす！！
+        	 * こちらを本命にしてOKと観ました。
+        	 * 
+        	 */
+        	debug.trace("Codegen_BodyCodegen_START!	functionName_"+fnCurrent.fnode.getFunctionName());
+        }
+        
+        debug.setDebug(Debug.DEBUG_FALSE);
+    	
+        
         if (hasVarsInRegs) {
-        	Debug debug = new Debug(this);
-        	debug.trace("Codegen_BodyCodegen_	functionName_"+fnCurrent.fnode.getFunctionName());
+        	debug.trace("hasVarsInRegs_Codegen_BodyCodegen	functionName_"+fnCurrent.fnode.getFunctionName());
         	
             // No need to create activation. Pad arguments if need be.
             int parmCount = scriptOrFn.getParamCount();
@@ -1639,9 +1658,14 @@ class BodyCodegen
             }
 
             int paramCount = fnCurrent.fnode.getParamCount();
+            debug.trace("paramCount_"+paramCount);
+            
             int varCount = fnCurrent.fnode.getParamAndVarCount();
+            debug.trace("varCount_"+varCount);
+            
             boolean [] constDeclarations = fnCurrent.fnode.getParamAndVarConst();
 
+           
             // REMIND - only need to initialize the vars that don't get a value
             // before the next call and are used in the function
             short firstUndefVar = -1;
@@ -1649,26 +1673,58 @@ class BodyCodegen
                 short reg = -1;
                 if (i < paramCount) {
                     if (!inDirectCallFunction) {
+                    	
+                    	debug.trace("Codegen_BodyCodegen_AALOAD	functionName_"+fnCurrent.fnode.getFunctionName());
+                    	
+                    	
                         reg = getNewWordLocal();
+                        
+                        ArrayList<Symbol> ls = fnCurrent.fnode.symbols;
+                		if (0 < ls.size()) {
+                			Symbol symbol = ls.get(i);
+                			debug.trace("function_symbol["+i+"]_"+symbol.name()+"/レジスタのアドレスは_"+reg);
+                		}
+//                        collectionFunctionParam("引数",fnCurrent,i,reg, DEFINITION_ENUM.DEFINE_ARG);
+                        
                         cfw.addALoad(argsLocal);
                         cfw.addPush(i);
                         cfw.add(ByteCode.AALOAD);
                         cfw.addAStore(reg);
                     }
-                } else if (fnCurrent.isNumberVar(i)) {
-                    reg = getNewWordPairLocal(constDeclarations[i]);
-                    cfw.addPush(0.0);
-                    cfw.addDStore(reg);
                 } else {
-                    reg = getNewWordLocal(constDeclarations[i]);
-                    if (firstUndefVar == -1) {
-                        Codegen.pushUndefined(cfw);
-                        firstUndefVar = reg;
+                	if (fnCurrent.isNumberVar(i)) {
+                    	
+                        reg = getNewWordPairLocal(constDeclarations[i]);
+                        
+                        ArrayList<Symbol> ls = fnCurrent.fnode.symbols;
+                		if (0 < ls.size()) {
+                			Symbol symbol = ls.get(i);
+                			debug.trace("isNumberVar_function_symbol["+i+"]_"+symbol.name()+"/レジスタのアドレスは_"+reg);
+                		}
+
+                        cfw.addPush(0.0);
+                        cfw.addDStore(reg);
                     } else {
-                        cfw.addALoad(firstUndefVar);
+                        reg = getNewWordLocal(constDeclarations[i]);
+                        
+                        ArrayList<Symbol> ls = fnCurrent.fnode.symbols;
+                		if (0 < ls.size()) {
+                			Symbol symbol = ls.get(i);
+                			debug.trace("isNumberVar_else_function_symbol["+i+"]_"+symbol.name()+"/レジスタのアドレスは_"+reg);
+                		}
+                		
+                		
+                        if (firstUndefVar == -1) {
+                            Codegen.pushUndefined(cfw);
+                            firstUndefVar = reg;
+                        } else {
+                            cfw.addALoad(firstUndefVar);
+                        }
+                        cfw.addAStore(reg);
                     }
-                    cfw.addAStore(reg);
                 }
+
+                
                 if (reg >= 0) {
                     if (constDeclarations[i]) {
                         cfw.addPush(0);
@@ -1703,6 +1759,8 @@ class BodyCodegen
 
         String debugVariableName;
         if (fnCurrent != null) {
+        	
+        	
             debugVariableName = "activation";
             cfw.addALoad(funObjLocal);
             cfw.addALoad(variableObjectLocal);
@@ -1757,9 +1815,14 @@ class BodyCodegen
             int linenum = scriptOrFn.getEndLineno();
             if (linenum != -1)
               cfw.addLineNumberEntry((short)linenum);
-
+            
+            return;
         } else {
             if (fnCurrent.itsContainsCalls0) {
+            	
+                debug.trace("Codegen_BodyCodegen_GETSTATIC	functionName_"+fnCurrent.fnode.getFunctionName());
+                
+            	
                 itsZeroArgArray = getNewWordLocal();
                 cfw.add(ByteCode.GETSTATIC,
                         "org/mozilla/javascript/ScriptRuntime",
@@ -1767,6 +1830,10 @@ class BodyCodegen
                 cfw.addAStore(itsZeroArgArray);
             }
             if (fnCurrent.itsContainsCalls1) {
+            	
+                debug.trace("Codegen_BodyCodegen_ANEWARRAY	functionName_"+fnCurrent.fnode.getFunctionName());
+                
+            	
                 itsOneArgArray = getNewWordLocal();
                 cfw.addPush(1);
                 cfw.add(ByteCode.ANEWARRAY, "java/lang/Object");
@@ -1775,6 +1842,7 @@ class BodyCodegen
         }
     }
 
+    
     private void generateGetGeneratorResumptionPoint()
     {
         cfw.addALoad(generatorStateLocal);
@@ -5051,4 +5119,35 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
         public List<Integer> jsrPoints  = new ArrayList<Integer>();
         public int tableLabel = 0;        
     }
+    
+    
+    
+    
+    
+    
+//    final CollectionNode cNode;//コレクション用のノード
+//	final CounterClass counterClass;
+    
+    /**
+	 * 新設メソッド、メソッド名とパラメータ名の取得、あと型がだせれば完璧
+	 * ここに出てくる部分は重複しない状態のため、信頼が出来る。さてはて？
+	 * @param comment 
+	 * 
+	 * @param fnCurrent 最適化ずみのノード
+	 * @param i パラメータのナンバリング
+	 * @param reg  レジスタへのセットされているNo.　あとで一致を見る。
+	 * @param defineType 
+	 */
+//	private void collectionFunctionParam(String comment, OptFunctionNode fnCurrent2, int i, short reg, DEFINITION_ENUM defineType) {
+//		
+////		debug.trace("functionName_"+fnCurrent.fnode.getFunctionName()+"_end");
+//		
+//		ArrayList<Symbol> ls = fnCurrent.fnode.symbols;
+//		if (0 < ls.size()) {
+//			Symbol symbol = ls.get(i);
+//			debug.trace(comment+"_function_symbol["+i+"]_"+symbol.name()+"/レジスタのアドレスは_"+reg);
+//			cNode.insertParam(symbol.name(), reg, defineType);
+//		}
+//	}
+    
 }

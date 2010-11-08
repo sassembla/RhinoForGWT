@@ -220,7 +220,7 @@ public class ScriptOrFnNode extends Node.Scope {
     private ObjArray functions;
     private ObjArray regexps;
     
-    private ArrayList<Symbol> symbols;
+    public ArrayList<Symbol> symbols;
     private int paramCount = 0;
     private String[] variableNames;
     private boolean[] isConsts;

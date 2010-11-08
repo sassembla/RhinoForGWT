@@ -233,6 +233,7 @@ public class Decompiler
     private void appendString(String str)
     {
     	debug.trace("sourceBuffer_appendString_"+str);
+    	
         int L = str.length();
         int lengthEncodingSize = 1;
         if (L >= 0x8000) {

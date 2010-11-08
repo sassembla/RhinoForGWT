@@ -232,7 +232,7 @@ public class Node
         private Jump jumpNode;
     }
     
-    static class Symbol {
+    public static class Symbol {
         Symbol(int declType, String name) {
             this.declType = declType;
             this.name = name;
@@ -246,6 +246,38 @@ public class Node
         int index;
         String name;
         Node.Scope containingTable;
+        
+        
+        int paramNum;
+        
+        
+        
+        /**
+		 * 新設の引数インデックス番号
+		 * ゲッター
+		 * 
+		 * 何番目に登場したものかを保存しておき、後で引き出す。
+		 * @return the paramNum
+		 */
+		public int getParamNum() {
+			return paramNum;
+		}
+		/**
+		 * 新設の引数インデックス番号
+		 * セッター
+		 * 
+		 * 何番目に登場したものかを保存しておき、後で引き出す。
+		 * @param paramNum the paramNum to set
+		 */
+		public void setParamNum(int paramNum) {
+			this.paramNum = paramNum;
+		}
+		
+		public String name() {
+//			debug.trace("name_"+this.name);
+			return this.name;
+		}
+        
     }
     
     static class Scope extends Jump {
