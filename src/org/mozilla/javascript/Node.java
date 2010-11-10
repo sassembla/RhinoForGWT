@@ -1189,6 +1189,7 @@ public class Node
             toString(new ObjToIntMap(), sb);
             return sb.toString();
         }
+        
         return String.valueOf(type);
     }
 

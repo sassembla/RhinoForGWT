@@ -2372,6 +2372,7 @@ public class Context
         }
         ScriptOrFnNode tree;
         if (sourceString != null) {
+        	//TODO ここから解析、Decomplier
             tree = p.parse(sourceString, sourceName, lineno);
         } else {
             tree = p.parse(sourceReader, sourceName, lineno);

@@ -78,7 +78,12 @@ import com.kissaki.subFrame.Debug;
  */
 public class Decompiler
 {
-	Debug debug = new Debug(this);
+	Debug debug;
+	public Decompiler () {
+		debug = new Debug(this);
+		debug.setDebug(Debug.DEBUG_FALSE);
+	}
+	
     /**
      * Flag to indicate that the decompilation should omit the
      * function header and trailing brace.
