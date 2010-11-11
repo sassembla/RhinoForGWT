@@ -1181,17 +1181,16 @@ public class Node
         }
     }
 
-    @Override
-    public String toString()
-    {
-        if (Token.printTrees) {
-            StringBuffer sb = new StringBuffer();
-            toString(new ObjToIntMap(), sb);
-            return sb.toString();
-        }
-        
-        return String.valueOf(type);
-    }
+//    @Override
+//    public String toString()
+//    {
+//        if (Token.printTrees) {
+//            StringBuffer sb = new StringBuffer();
+//            toString(new ObjToIntMap(), sb);
+//            return sb.toString();
+//        }
+//        return String.valueOf(type);
+//    }
 
     private void toString(ObjToIntMap printIds, StringBuffer sb)
     {

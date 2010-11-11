@@ -130,8 +130,7 @@ public class TestNameImpl extends TestCase {
 		 */
 		CollectionNode collectionNode = new CollectionNode("テスト用");//初期化
 		collectionNode.insertMethod("メソッド名");
-		collectionNode.insertParam("パラメータ名", 100, DEFINITION_ENUM.DEFINE_ARG);
-		collectionNode.updateParamByReg(100, TYPE_ENUM.TYPE_JAVASCRIPTOBJECT);
+		collectionNode.insertParam("メソッド名", "パラメータ名", DEFINITION_ENUM.DEFINE_ARG);
 		collectionNode.updateParamByName("パラメータ名", TYPE_ENUM.TYPE_BOOLEAN);
 		
 //		debug.trace("メソッド数_"+collectionNode.getMethodNum());

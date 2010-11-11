@@ -2,6 +2,7 @@ package com.kissaki.rhinoforgwt;
 
 import java.util.ArrayList;
 
+import com.kissaki.rhinoforgwt.CollectionType.TYPE_ENUM;
 import com.kissaki.subFrame.Debug;
 
 /**
@@ -13,12 +14,8 @@ import com.kissaki.subFrame.Debug;
  * 匿名メソッドによって既存のメソッドの型が更新されない前提でやっているが、
  * あり得る事態なので、匿名メソッドの入力は、入力側の機構に任せられるようにしてある。
  * 
- * ただし、匿名メソッドはprivateとして実装する、かも。
+ * ただし、匿名メソッドは読み込み対象としない。
  * （そもそも単独で呼ばれる想定でないだろうし。）
- * 
- * 
- * オブジェクトのメインクラスを返すための判別が非常に苦労しそう。うーーーーん。
- * ラップして実行する、というのが根本だからなあ。
  * @author sassembla
  *
  */
@@ -64,23 +61,8 @@ public class CollectionNode implements CollectionType {
 	}
 	
 	
-	static String nowMethodName = "";//現在フォーカスしているメソッドの名称
 
-	/**
-	 * 現在フォーカスしているメソッド名のセットを行う
-	 * @param string
-	 */
-	private void setNowMethodName(String string) {
-		nowMethodName = string;
-	}
-	
-	/**
-	 * 現在フォーカスしているメソッド名を返す
-	 * @return
-	 */
-	public String getNowMethodName() {
-		return nowMethodName;
-	}
+
 	
 	
 	/**
@@ -92,8 +74,6 @@ public class CollectionNode implements CollectionType {
 //		debug.trace("insertMethod_"+string);
 //		debug.trace("before_"+getNowMethodName());
 		if (!isMethodNameAlreadyExist(string)) {//未登録のメソッドを登録する、
-			
-			setNowMethodName(string);
 			//debug.trace("new Method_"+getNowMethodName());
 			MethodNode mNode = new MethodNode();
 			mNode.setMethodName(string);
@@ -105,11 +85,9 @@ public class CollectionNode implements CollectionType {
 	
 	/**
 	 * 現在フォーカスしているメソッド名に対して、パラメータとレジスタを追加する
-	 * パラメータ名、レジスタが既に使用されていたらエラーを返す
-	 * @param string
-	 * @param i
+	 * パラメータ名が既に使用されていたらエラーを返す
 	 */
-	public void insertParam(String paramName, int regNum, DEFINITION_ENUM defineType) throws IllegalArgumentException {
+	public void insertParam(String methodName, String paramName, DEFINITION_ENUM defineType) throws IllegalArgumentException {
 		
 		//debug.trace("nowMethodName_"+getNowMethodName()+"/insertParam_"+paramName+"/reg_"+regNum+"/defineType_"+defineType);
 		//現在のメソッドについて、既にパラメータ名がセットされていないか、チェックを行う
@@ -117,40 +95,15 @@ public class CollectionNode implements CollectionType {
 		for (int i = 0; i < methodNodeArrayList.size(); i++) {
 			MethodNode mNode = methodNodeArrayList.get(i);
 			
-			if (mNode.getMethodName().matches(getNowMethodName())) {//メソッドノード確定、あとは放り込む
-				mNode.addpNodeParam(paramName, regNum, TYPE_ENUM.TYPE_JAVASCRIPTOBJECT, defineType);
+			if (mNode.getMethodName().matches(methodName)) {//メソッドノード確定、あとは放り込む
+				mNode.addpNodeParam(paramName, TYPE_ENUM.TYPE_JAVASCRIPTOBJECT, defineType);
 			}
 		}
 		
 	}
 	
+
 	
-	
-	/**
-	 * 型情報のセット1 レジスタを使った型判別の入力
-	 * 
-	 * 既に定義されている型に対しては、JavaScriptObject < その他の型、の優先順位で優先する。
-	 * 順位が下回る場合は型情報を更新しない。
-	 * 
-	 * 登場していないParamの入力が発生したら、IllegalArgumentException
-	 * @param regNum レジスタ番号
-	 * @param paramType　型名
-	 */
-	public void updateParamByReg(int regNum, TYPE_ENUM paramType) throws IllegalArgumentException{
-		
-		for (int i = 0; i < methodNodeArrayList.size(); i++) {
-			MethodNode mNode = methodNodeArrayList.get(i);
-			
-			if (mNode.getMethodName().matches(getNowMethodName())) {//メソッドノード確定、あとは放り込む
-				String paramName = mNode.addParamTypeByReg(regNum, paramType);//レジスタ番号を指定して、引数のtypeを設定する
-				//debug.trace("nowMethodName_2_"+getNowMethodName()+"/updateParamByReg_"+paramName+"/reg_"+regNum+"/type_"+paramType);
-				
-				return;
-			}
-		}
-		
-		throw new IllegalArgumentException("updateParamByReg_今まで存在しないパラメータをアップデートしようとしている_"+"名称不明、この時点では或る筈なので後で読もう"+"/reg_"+regNum+"/type_"+paramType);
-	}
 	
 	
 	
@@ -170,10 +123,9 @@ public class CollectionNode implements CollectionType {
 		
 		for (int i = 0; i < methodNodeArrayList.size(); i++) {
 			MethodNode mNode = methodNodeArrayList.get(i);
-			
-			if (mNode.getMethodName().matches(getNowMethodName())) {//メソッドノード確定、あとは放り込む
-				mNode.addParamTypeByName(paramName, paramType);//レジスタ番号を指定して、引数のtypeを設定する
-				//debug.trace("nowMethodName_3_"+getNowMethodName()+"/updateParamByName_"+paramName+"/type_"+paramType);
+			if (mNode.hasParam(paramName) != null) {
+				ParameterNode pNode = mNode.hasParam(paramName);
+				pNode.setParamType(paramType);
 				return;
 			}
 		}
@@ -211,18 +163,21 @@ public class CollectionNode implements CollectionType {
 		
 		return false;
 	}
+	
+	
 
 
 	/**
 	 * 現在フォーカスしているメソッドが持っているパラメータ数を返す
+	 * @param methodName 
 	 * @return
 	 */
-	public int getNowMethodParameterNum() {
+	public int getNowMethodParameterNum(String methodName) {
 		if (methodNodeArrayList.size() == 0) return 0;//メソッドが一つもなかったら0
 		
 		for (int i = 0; i < methodNodeArrayList.size(); i++) {
 			MethodNode mNode = methodNodeArrayList.get(i);
-			if (mNode.getMethodName().matches(getNowMethodName())) {
+			if (mNode.getMethodName().matches(methodName)) {
 				return mNode.getpNodeSize();
 			}
 		}
@@ -233,14 +188,15 @@ public class CollectionNode implements CollectionType {
 
 	/**
 	 * メソッドが持っているパラメータの名称一覧を返す
+	 * @param methodName 
 	 * @return
 	 */
-	public String [] getNowMethodParameterNames() {
+	public String [] getNowMethodParameterNames(String methodName) {
 		if (methodNodeArrayList.size() == 0) return null;//メソッドが一つもなかったら0
 		
 		for (int i = 0; i < methodNodeArrayList.size(); i++) {
 			MethodNode mNode = methodNodeArrayList.get(i);
-			if (mNode.getMethodName().matches(getNowMethodName())) {
+			if (mNode.getMethodName().matches(methodName)) {
 				return mNode.getAllParamName();
 			}
 		}
@@ -250,14 +206,15 @@ public class CollectionNode implements CollectionType {
 
 	/**
 	 * このメソッドにセットされている引数の型一覧を返す
+	 * @param methodName 
 	 * @return
 	 */
-	public TYPE_ENUM[] getNowMethodParameterTypes() {
+	public TYPE_ENUM[] getNowMethodParameterTypes(String methodName) {
 		if (methodNodeArrayList.size() == 0) return null;//メソッドが一つもなかったら0
 		
 		for (int i = 0; i < methodNodeArrayList.size(); i++) {
 			MethodNode mNode = methodNodeArrayList.get(i);
-			if (mNode.getMethodName().matches(getNowMethodName())) {
+			if (mNode.getMethodName().matches(methodName)) {
 				return mNode.getAllParamType();
 			}
 		}
@@ -271,13 +228,14 @@ public class CollectionNode implements CollectionType {
 
 	/**
 	 * 現在フォーカスされているメソッドの匿名/有名タイプを指定する。
-	 * @param methodNoname
+	 * @param メソッド名 
+	 * @param タイプ
 	 */
-	public void setMethodType(METHOD_TYPE methodType) {
+	public void setMethodType(String methodName, METHOD_TYPE methodType) {
 		for (int i = 0; i < methodNodeArrayList.size(); i++) {
 			MethodNode mNode = methodNodeArrayList.get(i);
 			
-			if (mNode.methodName == getNowMethodName()) {//メソッドノード確定、あとは放り込む
+			if (mNode.methodName == methodName) {//メソッドノード確定、あとは放り込む
 				mNode.setMethodType(methodType);
 			}
 		}
@@ -321,6 +279,27 @@ public class CollectionNode implements CollectionType {
 		s1.append("	getIstanceOfJSObject()."+mNode.getMethodName()+"("+ s2.toString() +");");
 		return s1.toString();
 	}
-	
+
+
+
+
+	/**
+	 * 指定したパラメータを持っているメソッドを返す
+	 * @param paramName
+	 * @return
+	 */
+	public MethodNode getMethodHasParam(String paramName) {
+		
+		for (int i = 0; i < methodNodeArrayList.size(); i++) {
+			MethodNode mNode = methodNodeArrayList.get(i);
+			if (mNode.hasParam(paramName) != null) {
+				return mNode;
+			}
+		}
+		return null;
+	}
+
+
+
 	
 }

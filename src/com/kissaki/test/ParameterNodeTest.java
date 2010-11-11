@@ -50,19 +50,7 @@ public class ParameterNodeTest extends TestCase implements CollectionType {
 		
 	}
 	
-	public void testIsParamRegAlreadyUse () {
-		boolean b = test.isParamRegAlerdyUse(100);
-		assertEquals(false, b);
-		
-		test.setRegNumber(101);
-		b = test.isParamRegAlerdyUse(101);
-		assertEquals(true, b);
-		
-		
-		test.setRegNumber(102);
-		b = test.isParamRegAlerdyUse(100);
-		assertEquals(false, b);
-	}
+
 	
 	/**
 	 * タイプ型へのセットのテスト、型の転落を防ぐ（より下位のクラスに落ち着くようにする）

@@ -2,6 +2,7 @@ package com.kissaki.rhinoforgwt;
 
 import java.util.ArrayList;
 
+import com.kissaki.rhinoforgwt.CollectionType.TYPE_ENUM;
 import com.kissaki.subFrame.Debug;
 
 
@@ -82,16 +83,17 @@ public class MethodNode implements CollectionType {
 	 * @param defineType 
 	 * @throws IllegalArgumentException
 	 */
-	public void addpNodeParam(String paramName, int regNum, TYPE_ENUM paramType, DEFINITION_ENUM defineType) throws IllegalArgumentException{
+	public void addpNodeParam(String paramName, TYPE_ENUM paramType, DEFINITION_ENUM defineType) throws IllegalArgumentException{
 		//リストに既に含まれている場合、を含むかなあ。
-		if (isParamAlerdyUse(paramName,regNum)) {//パラメータ名が既に含まれていて、regの値が異なる　or　regの値が一緒 ParameterNodeの仕様
-			debug.trace("addpNodeParam_error_同じパラメータ名か同じreg、あるは両方が既に存在している_paramName_"+paramName+"/	regNum_"+regNum);
-			throw new IllegalArgumentException("addpNodeParam_error_同じパラメータ名か同じreg、あるは両方が既に存在している_");
+		if (isParamAlerdyUse(paramName)) {//パラメータ名が既に含まれているのなら、、、帰る。
+			debug.trace("すでに存在するパラメータなので、登録しない_"+paramName);
+			return;//throw new IllegalArgumentException("addpNodeParam_error_同じパラメータ名か同じreg、あるは両方が既に存在している_");
 		}
+		
+		debug.trace("セットするパラメータ_"+paramName);
 		
 		ParameterNode newParameterNode = new ParameterNode();
 		newParameterNode.setParamName(paramName);
-		newParameterNode.setRegNumber(regNum);
 		newParameterNode.setParamType(paramType);
 		newParameterNode.setDefineType(defineType);
 		
@@ -133,23 +135,6 @@ public class MethodNode implements CollectionType {
 		}
 	}
 
-	/**
-	 * レジスタの数値を返す
-	 * テスト用
-	 * @return
-	 */
-	public int[] getAllParamReg() {
-		if (0 < pNodeArrayList.size()) {
-			int regs [] = new int[pNodeArrayList.size()];
-			for (int i = 0; i < pNodeArrayList.size(); i++) {
-				ParameterNode node = pNodeArrayList.get(i);
-				regs[i] = node.getRegNumber();
-			}
-			return regs;
-		} else {
-			return null;
-		}
-	}
 
 	/**
 	 * 入力された内容のpNodeが存在していれば、対応する結果を返す
@@ -158,7 +143,7 @@ public class MethodNode implements CollectionType {
 	 * @param regNum
 	 * @return
 	 */
-	public boolean isParamAlerdyUse(String paramName, int regNum) {
+	public boolean isParamAlerdyUse(String paramName) {
 		if (pNodeArrayList.size() == 0) return false;//何も登録されていないので何でもok
 		
 		for (int i = 0; i < pNodeArrayList.size(); i++) {
@@ -166,43 +151,11 @@ public class MethodNode implements CollectionType {
 			if (pNodeCheck.isParamNameAlerdyUse(paramName)) {//同じ名称がある
 				return true;
 			}
-			
-			if (pNodeCheck.isParamRegAlerdyUse(regNum)) {//同じregが使用されている
-				return true;
-			}
 		}
 		
 		return false;
 	}
 
-	
-	
-	
-	/**
-	 * レジスタの番号から該当するpNodeを割り出し、該当する番号のレジスタを持つpNodeのtypeをparamTypeとして設定する
-	 * 
-	 * @param regNum
-	 * @param paramType
-	 * @throws IllegalArgumentException
-	 */
-	public String addParamTypeByReg(int regNum, TYPE_ENUM paramType) throws IllegalArgumentException {
-		if (pNodeArrayList.size() == 0) return null;
-			
-		for (int i = 0; i < pNodeArrayList.size(); i++) {
-
-			int regs = pNodeArrayList.get(i).getRegNumber();
-			if (regs == regNum) {//レジスタ番号の一致を見て、そのパラメータのタイプを入力する
-				ParameterNode pNode = pNodeArrayList.get(i);
-				String paramName = pNode.setParamType(paramType);
-				return paramName;
-			}
-		}
-		
-		debug.trace("addParamTypeByReg_存在しないregのタイプを更新している_"+regNum+"/paramType_"+paramType);
-		//ここは、追加すればよさそう。後回し。
-		throw new IllegalArgumentException("addParamTypeByReg_存在しないregのタイプを更新している_"+regNum+"/paramType_"+paramType);
-	}
-	
 	
 	/**
 	 * パラメータの名称から該当するpNodeを割り出し、pNodeのtypeをparamTypeとして設定する
@@ -228,6 +181,33 @@ public class MethodNode implements CollectionType {
 		
 		
 		throw new IllegalArgumentException("addParamTypeByName_存在しないparamNameのタイプを更新している_"+paramName+"/paramType_"+paramType);
+	}
+
+	/**
+	 * このメソッドノードが該当するパラメータを持っていればtrue
+	 * @param paramName
+	 * @return
+	 */
+	public ParameterNode hasParam(String paramName) {
+		
+		for (int i = 0; i < pNodeArrayList.size(); i++) {
+
+			String name = pNodeArrayList.get(i).getParamName();
+			if (name.matches(paramName)) {//パラメータ名の一致を見て、そのパラメータのタイプを入力する
+				return pNodeArrayList.get(i);
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * 特定のパラメータのタイプを返す、そのパラメータを持っていなければ、nullが返る。
+	 * @param string
+	 * @return
+	 */
+	public TYPE_ENUM getParamType(String string) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 	

@@ -11,7 +11,6 @@ package com.kissaki.rhinoforgwt;
  */
 public class ParameterNode implements CollectionType {
 	String paramName;//パラメータ名
-	int regNumber;//パラメータのレジスタ番号
 	TYPE_ENUM paramType;//パラメータ型 初期値は
 	DEFINITION_ENUM defineType;//	arg/引数　か、param/パラメータか
 	
@@ -20,7 +19,6 @@ public class ParameterNode implements CollectionType {
 	 */
 	public ParameterNode () {
 		setParamName(NAME_NULL);//無名として登録
-		setRegNumber(-1);
 		setParamType(CollectionType.TYPE_ENUM.TYPE_NULL);//無名として登録
 		setDefineType(CollectionType.DEFINITION_ENUM.NO_DEFINITION);//型が無い状態で登録　argかparam
 	}
@@ -32,12 +30,7 @@ public class ParameterNode implements CollectionType {
 		return paramName;
 	}
 
-	/**
-	 * @return the regNumber
-	 */
-	public int getRegNumber() {
-		return regNumber;
-	}
+
 
 	/**
 	 * @return the paramType
@@ -53,12 +46,7 @@ public class ParameterNode implements CollectionType {
 		this.paramName = paramName;
 	}
 
-	/**
-	 * @param regNumber the regNumber to set
-	 */
-	public void setRegNumber(int regNumber) {
-		this.regNumber = regNumber;
-	}
+
 	
 
 	/**
@@ -95,16 +83,6 @@ public class ParameterNode implements CollectionType {
 	 */
 	public boolean isParamNameAlerdyUse(String string) {
 		return paramName.matches(string);
-	}
-	
-	
-	/**
-	 * 既に使用されているregナンバーであればtrue、そうでなければfalseを返す
-	 * @param i
-	 * @return
-	 */
-	public boolean isParamRegAlerdyUse(int i) {
-		return regNumber == i;
 	}
 
 

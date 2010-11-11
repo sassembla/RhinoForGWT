@@ -3,6 +3,7 @@ package com.kissaki.test;
 import junit.framework.TestCase;
 
 import com.kissaki.rhinoforgwt.CollectionNode;
+import com.kissaki.rhinoforgwt.MethodNode;
 import com.kissaki.rhinoforgwt.CollectionType.DEFINITION_ENUM;
 import com.kissaki.rhinoforgwt.CollectionType.METHOD_TYPE;
 import com.kissaki.rhinoforgwt.CollectionType.TYPE_ENUM;
@@ -49,9 +50,20 @@ public class CollectionNodeTest extends TestCase {
 		assertEquals(false, b);//該当するものが存在しないのでfalse
 	}
 	
+	public void testHasParam () {
+		test.insertMethod("メソッド名");
+		test.insertParam("メソッド名", "パラメータ1", DEFINITION_ENUM.DEFINE_ARG);
+		
+		//このパラメータを持つメソッドが返ってくる
+		MethodNode node = test.getMethodHasParam("パラメータ1");
+		assertTrue("メソッド名が一致しない", node.getMethodName() == "メソッド名");
+	}
+	
+
+	
 	
 	/**
-	 * 現在フォーカスしているメソッドに対して、パラメータを追加するののテスト
+	 * 現在フォーカスしているメソッドに対して、パラメータを追加するテスト
 	 * 
 	 * 現在フォーカスしているメソッドを取得し、
 	 * そのノードに対して、パラメータを追加する　
@@ -59,63 +71,32 @@ public class CollectionNodeTest extends TestCase {
 	 */
 	public void testInsertParam () {
 		test.insertMethod("メソッド名");
-		test.insertParam("パラメータ1", 0, DEFINITION_ENUM.DEFINE_ARG);
+		test.insertParam("メソッド名", "パラメータ1", DEFINITION_ENUM.DEFINE_ARG);
 		
 		//メソッドが一つある
 		assertEquals(1,test.getMethodNum());//一つのメソッドが有る
 		
-		//その名称がメソッド名と同一
-		assertEquals("メソッド名", test.getNowMethodName());
-		
 		//メソッドが一つのパラメータを持っている
-		assertEquals(1, test.getNowMethodParameterNum());
+		assertEquals(1, test.getNowMethodParameterNum("メソッド名"));
 		
 		//パラメータの名称がパラメータ名と同一
-		String name [] = test.getNowMethodParameterNames();
+		String name [] = test.getNowMethodParameterNames("メソッド名");
 		assertEquals("パラメータ1", name[0]);
 		
 	}
 	
 	
-	/**
-	 * レジスタを元に型を設定する
-	 */
-	public void testChangeParamType () {
-		test.insertMethod("メソッド名");
-		test.insertParam("パラメータ1", 0, DEFINITION_ENUM.DEFINE_ARG);
-		
-		test.updateParamByReg(0, TYPE_ENUM.TYPE_STRING);//reg_type型をセット
-		TYPE_ENUM typeName [] = test.getNowMethodParameterTypes();
-		//assertEquals(TYPE_ENUM.TYPE_STRING, typeName[0]);//メソッドのパラメータの型が一致
-		assertEquals("合致していないようだ_", TYPE_ENUM.TYPE_STRING, typeName[0]);
-	}
 	
 	/**
 	 * 名称を元に型を設定する
 	 */
 	public void testChangeParamType2 () {
 		test.insertMethod("メソッド名");
-		test.insertParam("パラメータ1", 0, DEFINITION_ENUM.DEFINE_ARG);
+		test.insertParam("メソッド名", "パラメータ1", DEFINITION_ENUM.DEFINE_ARG);
 		
 		test.updateParamByName("パラメータ1", TYPE_ENUM.TYPE_STRING);//str_type型をセット
-		TYPE_ENUM typeName [] = test.getNowMethodParameterTypes();
+		TYPE_ENUM typeName [] = test.getNowMethodParameterTypes("メソッド名");
 		assertEquals(TYPE_ENUM.TYPE_STRING, typeName[0]);//メソッドのパラメータの型が一致
-	}
-	
-	/**
-	 * レンジ外のレジスタ入力へのテスト
-	 * 存在していないレジスタへのタイプ入力時にエラーを出す
-	 */
-	public void testOverRange () {
-		test.insertMethod("メソッド名");
-		test.insertParam("パラメータ1", 0, DEFINITION_ENUM.DEFINE_ARG);
-		
-		try {
-			test.updateParamByReg(10, TYPE_ENUM.TYPE_JAVASCRIPTOBJECT);//存在しないregアドレスへreg_type型をセット
-			assertTrue("成立してはいけない_レンジ外のレジスタ入力",false);
-		} catch (Exception e) {
-			
-		}
 	}
 	
 	
@@ -124,7 +105,7 @@ public class CollectionNodeTest extends TestCase {
 	 */
 	public void testNotExistName () {
 		test.insertMethod("メソッド名");
-		test.insertParam("パラメータ1", 0, DEFINITION_ENUM.DEFINE_ARG);
+		test.insertParam("メソッド名", "パラメータ1", DEFINITION_ENUM.DEFINE_ARG);
 		
 		try {
 			test.updateParamByName("パラメータ2", TYPE_ENUM.TYPE_STRING);//存在しない名称パラメータへとstr_type型をセット
@@ -133,20 +114,4 @@ public class CollectionNodeTest extends TestCase {
 			
 		}
 	}
-	
-	
-	
-	
-	/**
-	 * メソッドのタイプを入力する。
-	 */
-	public void testSetMethodType () {
-		test.setMethodType(METHOD_TYPE.METHOD_NONAME);
-	}
-	
-	
-
-
-	
-	
 }
