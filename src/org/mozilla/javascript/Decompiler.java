@@ -79,9 +79,8 @@ import com.kissaki.subFrame.Debug;
 public class Decompiler
 {
 	Debug debug;
-	public Decompiler () {
-		debug = new Debug(this);
-		debug.setDebug(Debug.DEBUG_FALSE);
+	public Decompiler (Debug debug) {
+		this.debug = debug;
 	}
 	
     /**

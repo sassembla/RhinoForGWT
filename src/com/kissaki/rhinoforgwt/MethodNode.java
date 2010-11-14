@@ -76,7 +76,8 @@ public class MethodNode implements CollectionType {
 
 	/**
 	 * メソッドへのパラメータ情報の入力
-	 * 重複した入力がある場合、エラーを返す
+	 * 
+	 * 重複した入力があっても、型以外が論点ではないため、型情報のみ素通りさせる。
 	 * @param paramName
 	 * @param regNum
 	 * @param paramType
@@ -84,13 +85,16 @@ public class MethodNode implements CollectionType {
 	 * @throws IllegalArgumentException
 	 */
 	public void addpNodeParam(String paramName, TYPE_ENUM paramType, DEFINITION_ENUM defineType) throws IllegalArgumentException{
-		//リストに既に含まれている場合、を含むかなあ。
-		if (isParamAlerdyUse(paramName)) {//パラメータ名が既に含まれているのなら、、、帰る。
-			debug.trace("すでに存在するパラメータなので、登録しない_"+paramName);
-			return;//throw new IllegalArgumentException("addpNodeParam_error_同じパラメータ名か同じreg、あるは両方が既に存在している_");
+		
+		if (isParamAlerdyUse(paramName)) {
+			
+			//型の上書き
+			updateParam(paramName, paramType);
+			
+			return;
 		}
 		
-		debug.trace("セットするパラメータ_"+paramName);
+		//debug.trace("セットするパラメータ_"+paramName+ "/	タイプ_"+ paramType);
 		
 		ParameterNode newParameterNode = new ParameterNode();
 		newParameterNode.setParamName(paramName);
@@ -170,7 +174,7 @@ public class MethodNode implements CollectionType {
 		for (int i = 0; i < pNodeArrayList.size(); i++) {
 
 			String name = pNodeArrayList.get(i).getParamName();
-			if (name.matches(paramName)) {//パラメータ名の一致を見て、そのパラメータのタイプを入力する
+			if (name.equals(paramName)) {//パラメータ名の一致を見て、そのパラメータのタイプを入力する
 				ParameterNode pNode = pNodeArrayList.get(i);
 				pNode.setParamType(paramType);
 				return;
@@ -193,7 +197,7 @@ public class MethodNode implements CollectionType {
 		for (int i = 0; i < pNodeArrayList.size(); i++) {
 
 			String name = pNodeArrayList.get(i).getParamName();
-			if (name.matches(paramName)) {//パラメータ名の一致を見て、そのパラメータのタイプを入力する
+			if (name.equals(paramName)) {//パラメータ名の一致を見て、そのパラメータのタイプを入力する
 				return pNodeArrayList.get(i);
 			}
 		}
@@ -206,13 +210,27 @@ public class MethodNode implements CollectionType {
 	 * @return
 	 */
 	public TYPE_ENUM getParamType(String string) {
-		// TODO Auto-generated method stub
+		
+		ParameterNode pNode = hasParam(string);
+		if (pNode != null) {
+			return pNode.getParamType();
+		}
 		return null;
 	}
 	
 	
-	
-	
-	
-	
+	/**
+	 * パラメータの型更新を行う。
+	 * @param paramName
+	 * @param paramType
+	 */
+	public void updateParam(String paramName, TYPE_ENUM paramType) throws IllegalArgumentException {
+		ParameterNode pNode = this.hasParam(paramName);
+		if (pNode != null) {
+			pNode.setParamType(paramType);
+//			debug.trace("after_"+paramName+"__"+pNode.getParamType());
+			return;
+		}
+		throw new IllegalArgumentException("updateParam_存在しないparamNameのタイプを更新している_"+paramName+"/paramType_"+paramType);
+	}
 }

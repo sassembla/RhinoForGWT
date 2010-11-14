@@ -33,6 +33,8 @@ public class Debug {
 	private String DEBUG_VERSION = "";
 	private int debug = DEBUG_TRUE;//デバッグモード getter,setterあり。
 	
+	private StringBuffer sb;
+	
 	private String attr = null;//追跡用、作成者クラスの表示用文字列
 	private int traceSetting;//追跡用のセッティング
 	
@@ -53,7 +55,7 @@ public class Debug {
 	 */
 	public Debug (Object obj) {
 		setDebug(debug);//デバッグモードのセット
-		initialize(obj);	
+		initialize(obj);
 	}
 	
 	
@@ -65,6 +67,8 @@ public class Debug {
 	private void initialize(Object obj) {
 		addTraceSetting(DEBUG_EVENT_ON);//クライアント内のデバッグ表示用
 //		addTraceSetting(DEBUG_ALERT_ON);//JavaScriptでのどうしようも無い時のデバッグ用
+		
+		sb = new StringBuffer();
 		
 		attr = ""+obj.getClass();
 		
@@ -83,9 +87,6 @@ public class Debug {
 	 */
 	public void trace (String s) {
 		
-		if (!isDebug()) {
-			return;//何もしない
-		}
 		
 		if (isDebug()) {
 			procDebugTrace(s);//出力を行う
@@ -102,6 +103,8 @@ public class Debug {
 		try {//サーバサイドから使用する際は、この機能は使えない。。。
 			if (isTraceSet(DEBUG_EVENT_ON)) {//トレースイベントを発行する設定の場合、イベントを送付する。
 //				ToDoAppDelegate.getDelegate().fireEvent(new DebugEvent(attr + TRACE_MESSAGE + s));
+				sb.append(s);
+				sb.append(System.getProperty("line.separator"));
 			}
 		} catch (Throwable t) {
 			selfDebugTrace("trace_error_caused by DEBUG_EVENT_ON_"+t);
@@ -144,6 +147,9 @@ public class Debug {
 		return this.debug;
 	}
 
+	public String getDebugString() {
+		return sb.toString();
+	}
 	
 	
 	

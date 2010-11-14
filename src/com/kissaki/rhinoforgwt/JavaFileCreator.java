@@ -1,5 +1,11 @@
 package com.kissaki.rhinoforgwt;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+
 import com.kissaki.subFrame.Debug;
 
 /**
@@ -10,8 +16,7 @@ import com.kissaki.subFrame.Debug;
 public class JavaFileCreator {
 	Debug debug = null;
 	
-	String name;//全体で使用する名前
-	
+
 	String STRING_KEY_PUBBLIC = "public"; 
 	String STRING_KEY_VOID = "void";
 	String STRING_KEY_CLASS = "class ";
@@ -42,76 +47,82 @@ public class JavaFileCreator {
 	public static final String STRING_KEY_JS_FOOTER = "JS";//JSのラッパーメソッドのに使われる拡張子、みたいなもの
 	String STRING_DEFAULT_ARG_TYPE = STRING_KEY_JAVASCRIPTOBJECT;
 	
+	
+	String masterName;
+	
 
-	/**
-	 * 名称をセットする
-	 * @param name
-	 * @return
-	 */
-	public void setName(String name) {
-		debug.trace("name_"+name);
-		this.name = name;
-	}
-	
-	/**
-	 * @return the name
-	 */
-	public String getName() {
-		return name;
-	}
-	
-	
-	private int phraseCount;//phrase {} のカウント  ()のカウントは頻出するため、特に作成しない
-	
 	/**
 	 * コンストラクタ
 	 */
 	public JavaFileCreator() {
 		debug = new Debug(this);
-		
 	}
 	
+	
+	
+	/**
+	 * 名称をセットする
+	 * @param name
+	 * @return
+	 */
+	private void setMasterName(String name) {
+		debug.trace("name_"+name);
+		this.masterName = name;
+	}
+	
+	/**
+	 * @return the name
+	 */
+	public String getMasterName() {
+		return masterName;
+	}
+	
+	
+	private int phraseCount;//phrase {} のカウント  ()のカウントは頻出するため、特に作成しない
 	
 	
 	/**
 	 * 実行
 	 * 与えられたコレクションノードから情報を引き出し、処理する。
 	 * @param collectionNode 
+	 * @param filePattern 拡張子
 	 */
-	public void procedure (CollectionNode collectionNode) {
+	public void procedure (CollectionNode collectionNode, String outputPath, String outputFileName, String filePattern) {
 		
-		setName(collectionNode.getMainName());//メイン名称をノードから取得している。
+		setMasterName(outputFileName);//メイン名称を設定
 		/*
 		 * この事により、決定される事項は下記
 		 * クラスの名称
-		 * 	getName()+"Implements"
+		 * 	getMasterName()+"Implements"
 		 * 
 		 * クラスのコンストラクタメソッドの名称
-		 * 	getName()+"Implements"
+		 * 	getMasterName()+"Implements"
 		 * 
 		 * クラス内で引き回されるJSObjectの名称
-		 * 	getName()+"JSObject"
+		 * 	getMasterName()+"JSObject"
 		 */
 		
 		StringBuffer sb = new StringBuffer();
 		
 		//Classヘッダー
-		sb.append(createClassHeader(getName()));//Classヘッダーを追加
+		sb.append(createClassHeader(getMasterName()));//Classヘッダーを追加
 		addLeftPhrase(sb);//ClassのPhrase
 		addCR(sb);
 		
 		//JSObject JSNIを使って実行する際に、オブジェクトとして使用する。
-		sb.append(generateJSObject(getName()));//このクラス中でグローバルに使用するJSオブジェクトの定義を行う。　
+		sb.append(generateJSObject(getMasterName()));//このクラス中でグローバルに使用するJSオブジェクトの定義を行う。　
 		addCR(sb);
 		
 		//JSObjectのセッターメソッド、ゲッターメソッドを追加する
-		sb.append(generateJSObjectSetter_Getter(getName(), null, null));
+		sb.append(generateJSObjectSetter_Getter(getMasterName(), null, null));
 		addCR(sb);
+		
 		//JSObjectのJSNI初期化メソッドを追加する
-		sb.append(generateNativeJavaScriptObjectMethod(getName(), null, null));
+		sb.append(generateNativeJavaScriptObjectMethod(getMasterName(), null, null));
 		addCR(sb);
+		
 		//内容　コンストラクタ
-		sb.append(generateConstructorBlock(getName(), null, null));//コンストラクト時に引数を伴う場合、ここで使用する必要がある筈。　まだ。
+		sb.append(generateConstructorBlock(getMasterName(), null, null));//コンストラクト時に引数を伴う場合、ここで使用する必要がある筈。　まだ。
 		addCR(sb);
 		
 		
@@ -120,9 +131,7 @@ public class JavaFileCreator {
 		
 		//内容　メソッド群の実装
 		for (int i = 0; i < collectionNode.getMethodNum();i++) {
-			//collectionNode.removeMethodsByMethodType(CollectionType.METHOD_TYPE.METHOD_NONAME);
-		
-	
+			
 			//一つずつメソッドを書き出すか。 インデックスが必要。A~順とか欲しい？　本来APIはそうなってるとうれしい物だけれど。
 			sb.append(collectionNode.getMethodNode(i));
 			addLeftPhrase(sb);//ClassのPhrase
@@ -133,7 +142,7 @@ public class JavaFileCreator {
 			
 			addCR(sb);//改行付き
 			addCR(sb);//改行付き
-			if (i == 10) break;
+			
 		}
 
 		
@@ -143,9 +152,34 @@ public class JavaFileCreator {
 		
 		
 		debug.assertTrue(getPhraseCount() == 0, "phraseCount != 0 _"+phraseCount);
-		debug.trace("procedure_sb_"+sb.toString());//最終出力
+		
+		//debug.trace("procedure_sb_"+sb.toString());//最終出力
+		
+		output(sb.toString(), outputPath, getMasterName()+"."+filePattern);
 	}
 	
+	/**
+	 * 外部にファイルとして出力するメソッド
+	 * @param string
+	 */
+	public void output(String contents, String path, String name) {
+		String fileName = path+name;
+		File file = new File(fileName);
+		FileWriter filewriter = null;
+		
+		try {
+			filewriter = new FileWriter(file);
+		} catch (Exception e) {
+			debug.trace("output_error_"+e);
+		}
+		
+		BufferedWriter bw = new BufferedWriter(filewriter);
+		PrintWriter pw = new PrintWriter(bw);
+		
+		pw.println(contents);
+		pw.close();
+	}
+
 	/**
 	 * 現在の行で、必要なタブの個数を返す
 	 * =かっこの数
@@ -222,6 +256,9 @@ public class JavaFileCreator {
 		
 		StringBuffer sb = new StringBuffer();
 		
+		sb.append("/*コンストラクタ*/");//コメント
+		addCR(sb);
+		
 		//コンストラクタの作成
 		sb.append(STRING_KEY_PUBBLIC+" "+getImplementsName(name)+"(");
 		define_parameterDescription(sb, definition, parameter);//型とパラメータを記述
@@ -259,7 +296,7 @@ public class JavaFileCreator {
 		addLeftPhrase(sb);// { を追加
 		addCR(sb);
 		
-		sb.append(getName()+" = "+jSInitializerMethodName(name)+"(");
+		sb.append(getMasterName()+" = "+jSInitializerMethodName(name)+"(");
 		parameterDescription(sb, parameter);//パラメータ名
 		sb.append(");");
 		addCR(sb);
@@ -318,7 +355,7 @@ public class JavaFileCreator {
 	 * JSObjectを初期化する際に使用するJSNIメソッドの名称を取得するメソッド
 	 */
 	private String jSInitializerMethodName(String name2) {
-		String methodName = STRING_KEY_SETJAVASCRIPTMETHOD_HEADER+ instanceOfJSObject(name);
+		String methodName = STRING_KEY_SETJAVASCRIPTMETHOD_HEADER+ instanceOfJSObject(getMasterName());
 		return methodName;
 	}
 	
@@ -513,7 +550,6 @@ public class JavaFileCreator {
 	 * @param sb
 	 */
 	private void addCR(StringBuffer sb) {
-		debug.trace("pharese_"+phraseCount);
 		sb.append(System.getProperty("line.separator"));
 		int max = getPhraseCount();
 		for (int i = 0; i < max; i++) {

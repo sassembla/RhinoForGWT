@@ -54,8 +54,10 @@ import org.mozilla.classfile.*;
 
 
 import com.kissaki.rhinoforgwt.CollectionNode;
+import com.kissaki.rhinoforgwt.JavaFileCreator;
 import com.kissaki.rhinoforgwt.Kissaki_CodeTag;
 import com.kissaki.rhinoforgwt.CollectionType.DEFINITION_ENUM;
+import com.kissaki.rhinoforgwt.CollectionType.TYPE_ENUM;
 import com.kissaki.subFrame.Debug;
 
 import java.util.*;
@@ -73,7 +75,13 @@ import junit.framework.Assert;
 
 public class Codegen implements Evaluator 
 {
-	Debug debug = new Debug(this);
+	Debug debug;
+	
+	public Codegen () {
+		debug = new Debug(this);
+	//	debug.setDebug(Debug.DEBUG_FALSE);
+	}
+	
 	public void captureStackInfo(RhinoException ex) {
 		throw new UnsupportedOperationException();
 	}
@@ -169,8 +177,8 @@ public class Codegen implements Evaluator
 			e = x;
 		}
 		throw new RuntimeException("Malformed optimizer package " + e);
-			}
-
+	}
+	
 	byte[] compileToClassFile(CompilerEnvirons compilerEnv,
 			String mainClassName,
 			ScriptOrFnNode scriptOrFn,
@@ -193,19 +201,28 @@ public class Codegen implements Evaluator
 
 		this.mainClassName = mainClassName;
 		debug.trace("mainClassName_"+mainClassName);//c1になっているが、元はProcessingかな。探れれば。第二目標
-
+		
 		this.mainClassSignature = ClassFileWriter.classNameToSignature(mainClassName);
-
+		
 		try {
 			debug.trace("開始");
 			
 			CollectionNode col = new CollectionNode("TEST");
-			
+			col.setMainName("ProcessingJS_");
 			//オブジェクトを吊るす
 			byte [] b = generateCode(encodedSource, col);
 			debug.trace("完結");
 			
-			debug.trace("照会");
+			
+			
+			JavaFileCreator jFCreator = new JavaFileCreator();
+			jFCreator.procedure(col, "/", "仮aaaaa", "java");
+			
+			
+			jFCreator.output(debug.getDebugString(), "/", "codeGenDebug.java");//デバッグ出力
+			
+			
+			debug.trace("照会完了");
 			
 			return b;
 		} catch (ClassFileWriter.ClassFileFormatException e) {
@@ -344,8 +361,7 @@ public class Codegen implements Evaluator
 		int count = scriptOrFnNodes.length;
 		for (int i = 0; i != count; ++i) {
 			ScriptOrFnNode n = scriptOrFnNodes[i];
-
-			BodyCodegen bodygen = new BodyCodegen(col);
+			BodyCodegen bodygen = new BodyCodegen(col, debug);
 			bodygen.cfw = cfw;
 			bodygen.codegen = this;
 			bodygen.compilerEnv = compilerEnv;
@@ -1354,12 +1370,13 @@ public class Codegen implements Evaluator
 
 class BodyCodegen implements Kissaki_CodeTag
 {
-	Debug debug = new Debug(this);
+	Debug debug;
 	private CollectionNode col;
+	private Node nullNode = new Node();
 
-	public BodyCodegen(CollectionNode col) {
+	public BodyCodegen(CollectionNode col, Debug debug) {
 		this.col = col;
-		// TODO Auto-generated constructor stub
+		this.debug = debug;
 	}
 
 	void generateBodyCode()
@@ -1398,7 +1415,7 @@ class BodyCodegen implements Kissaki_CodeTag
 			treeTop = scriptOrFn;
 		}
 		generateStatement(treeTop);
-		generateEpilogue();
+		generateEpilogue2(treeTop);
 
 		cfw.stopMethod((short)(localsMax + 1));
 
@@ -1445,7 +1462,7 @@ class BodyCodegen implements Kissaki_CodeTag
 				"(Lorg/mozilla/javascript/NativeFunction;"
 				+"Lorg/mozilla/javascript/Scriptable;"
 				+"[Ljava/lang/Object;"
-				+")Lorg/mozilla/javascript/Scriptable;",null);
+				+")Lorg/mozilla/javascript/Scriptable;",nullNode);
 		cfw.addAStore(variableObjectLocal);
 
 		// create a function object
@@ -1560,11 +1577,11 @@ class BodyCodegen implements Kissaki_CodeTag
 			 */
 			String methodName = fnCurrent.fnode.getFunctionName();
 
-			if (methodName == "") {
-				debug.setDebug(Debug.DEBUG_FALSE);
-			} else {
-				debug.setDebug(Debug.DEBUG_TRUE);
-			}
+//			if (methodName == "") {
+//				debug.setDebug(Debug.DEBUG_FALSE);
+//			} else {
+//				debug.setDebug(Debug.DEBUG_TRUE);
+//			}
 
 			debug.trace("		START!	functionName_"+fnCurrent.fnode.getFunctionName());
 
@@ -1719,7 +1736,7 @@ class BodyCodegen implements Kissaki_CodeTag
 				addScriptRuntimeInvoke2(CODE_PADARGUMENTS,
 						"([Ljava/lang/Object;I"
 						+")[Ljava/lang/Object;",
-						null);
+						nullNode);
 				cfw.addAStore(argsLocal);
 				cfw.markLabel(label);
 			}
@@ -1793,12 +1810,6 @@ class BodyCodegen implements Kissaki_CodeTag
 
 						reg = getNewWordPairLocal(constDeclarations[i]);
 
-						ArrayList<Symbol> ls = fnCurrent.fnode.symbols;
-						if (0 < ls.size()) {
-							Symbol symbol = ls.get(i);
-							//debug.trace("/Type7-1	isNumberVar_function_symbol["+i+"]_"+symbol.name()+"/レジスタのアドレスは_"+reg);
-						}
-
 						cfw.addPush(0.0);
 						cfw.addDStore(reg);
 
@@ -1809,14 +1820,7 @@ class BodyCodegen implements Kissaki_CodeTag
 						//debug.trace("Type7-2_"+fnCurrent.fnode.getFunctionName());
 
 						reg = getNewWordLocal(constDeclarations[i]);
-
-						ArrayList<Symbol> ls = fnCurrent.fnode.symbols;
-						if (0 < ls.size()) {
-							Symbol symbol = ls.get(i);
-							//debug.trace("/Type7-2	isNumberVar_else_function_symbol["+i+"]_"+symbol.name()+"/レジスタのアドレスは_"+reg);
-						}
-
-
+						
 						if (firstUndefVar == -1) {
 							Codegen.pushUndefined(cfw);
 							firstUndefVar = reg;
@@ -1833,7 +1837,7 @@ class BodyCodegen implements Kissaki_CodeTag
 				 * 記録不要。　10/11/10 12:57:31
 				 */
 				if (reg >= 0) {
-					//debug.trace("Type8_"+fnCurrent.fnode.getFunctionName()+"/対応レジスタのアドレスは_"+reg);
+					debug.trace("Type8_"+fnCurrent.fnode.getFunctionName()+"/対応レジスタのアドレスは_"+reg);
 
 					if (constDeclarations[i]) {
 						cfw.addPush(0);
@@ -1881,8 +1885,31 @@ class BodyCodegen implements Kissaki_CodeTag
 		String debugVariableName;
 		if (fnCurrent != null) {
 			debug.trace("Type11_"+fnCurrent.fnode.getFunctionName());
-
-
+			if (fnCurrent.fnode.getFunctionName().equals("background")) {
+				debug.trace("background_here!");
+			}
+			
+			{//メソッド追加と引数追加
+				col.insertMethod(fnCurrent.fnode.getFunctionName());
+				int paramCount = fnCurrent.fnode.getParamCount();//パラメータカウントを取得して設定する、Rhinoのオリジナルでは存在しない処理。既出のパラメータは省かれている。
+				debug.trace("paramCount_"+paramCount);
+				
+				for (int i = 0; i < paramCount; i++) {
+					ArrayList<Symbol> ls = fnCurrent.fnode.symbols;
+					if (0 < ls.size()) {
+						Symbol symbol = ls.get(i);
+						debug.trace("/Type6-1	function_symbol["+i+"]_"+symbol.name()+"/レジスタのアドレスは不明");
+						
+						col.insertMethod(fnCurrent.fnode.getFunctionName());//メソッド追加
+						col.insertParam(fnCurrent.fnode.getFunctionName(), symbol.name(), DEFINITION_ENUM.DEFINE_ARG);//パラメータ名、レジスタ番号、属性(引数)をセット
+					}
+				 }
+			}
+			
+			//パラメータ数が0であっても、内部で判断して引数が存在する場合がある。駄目だこの言語。やっぱ作るしかねえ。
+			//フック、、とか付けるのかな、、
+			
+			
 			debugVariableName = "activation";
 			cfw.addALoad(funObjLocal);
 			cfw.addALoad(variableObjectLocal);
@@ -1892,7 +1919,7 @@ class BodyCodegen implements Kissaki_CodeTag
 					+"Lorg/mozilla/javascript/Scriptable;"
 					+"[Ljava/lang/Object;"
 					+")Lorg/mozilla/javascript/Scriptable;",
-					null);
+					nullNode);
 			cfw.addAStore(variableObjectLocal);
 			cfw.addALoad(contextLocal);
 			cfw.addALoad(variableObjectLocal);
@@ -1900,7 +1927,7 @@ class BodyCodegen implements Kissaki_CodeTag
 					"(Lorg/mozilla/javascript/Context;"
 					+"Lorg/mozilla/javascript/Scriptable;"
 					+")V",
-					null);
+					nullNode);
 
 			/**
 			 * Type12	null
@@ -1921,7 +1948,7 @@ class BodyCodegen implements Kissaki_CodeTag
 					+"Lorg/mozilla/javascript/Scriptable;"
 					+"Z"
 					+")V",
-					null);
+					nullNode);
 		}
 
 		enterAreaStartLabel = cfw.acquireLabel();
@@ -1966,7 +1993,7 @@ class BodyCodegen implements Kissaki_CodeTag
 				debug.trace("Type14-a_"+fnCurrent.fnode.getFunctionName());
 				col.insertMethod(fnCurrent.fnode.getFunctionName());
 				//引数、、、あるんだよな、、型としてはどうなるんだろう。其のメソッドによって違うとかだと、凄く困る。、、、困る。
-
+				
 				itsZeroArgArray = getNewWordLocal();
 				cfw.add(ByteCode.GETSTATIC,
 						"org/mozilla/javascript/ScriptRuntime",
@@ -2012,10 +2039,10 @@ class BodyCodegen implements Kissaki_CodeTag
 				"(Ljava/lang/Object;)[Ljava/lang/Object;");
 	}
 
-	private void generateEpilogue()
+	private void generateEpilogue2(Node treeTop)
 	{
 		if (compilerEnv.isGenerateObserverCount())
-			addInstructionCount();        
+			addInstructionCount2(treeTop);        
 		if (isGenerator) {
 			// generate locals initialization
 			Map<Node,int[]> liveLocals = ((FunctionNode)scriptOrFn).getLiveLocals();
@@ -2092,7 +2119,7 @@ class BodyCodegen implements Kissaki_CodeTag
 			cfw.addALoad(popvLocal);
 			cfw.add(ByteCode.ARETURN);
 		} else {
-			generateActivationExit();
+			generateActivationExit2(treeTop);
 			cfw.add(ByteCode.ARETURN);
 
 			// Generate catch block to catch all and rethrow to call exit code
@@ -2105,7 +2132,7 @@ class BodyCodegen implements Kissaki_CodeTag
 
 			// Duplicate generateActivationExit() in the catch block since it
 			// takes less space then full-featured ByteCode.JSR/ByteCode.RET
-			generateActivationExit();
+			generateActivationExit2(treeTop);
 
 			cfw.addALoad(exceptionObject);
 			releaseWordLocal(exceptionObject);
@@ -2124,13 +2151,13 @@ class BodyCodegen implements Kissaki_CodeTag
 		"(Ljava/lang/Object;)[Ljava/lang/Object;");
 	}
 
-	private void generateActivationExit()
+	private void generateActivationExit2(Node node)
 	{
 		if (fnCurrent == null || hasVarsInRegs) throw Kit.codeBug();
 		cfw.addALoad(contextLocal);
 		addScriptRuntimeInvoke2(CODE_EXITFUNCTIONACTUIVATION,
 				"(Lorg/mozilla/javascript/Context;)V",
-				null);
+				node);
 	}
 
 	private void generateStatement(Node node)
@@ -2149,7 +2176,7 @@ class BodyCodegen implements Kissaki_CodeTag
 			if (compilerEnv.isGenerateObserverCount()) {
 				// Need to add instruction count even for no-ops to catch
 				// cases like while (1) {}
-				addInstructionCount(1);
+				addInstructionCount2(1,node);
 			}
 			while (child != null) {
 				generateStatement(child);
@@ -2229,13 +2256,13 @@ class BodyCodegen implements Kissaki_CodeTag
 		case Token.THROW:
 			generateExpression(child, node);
 			if (compilerEnv.isGenerateObserverCount())
-				addInstructionCount();                   
+				addInstructionCount2(node);                   
 			generateThrowJavaScriptException();
 			break;
 
 		case Token.RETHROW:
 			if (compilerEnv.isGenerateObserverCount())
-				addInstructionCount();
+				addInstructionCount2(node);
 			cfw.addALoad(getLocalBlockRegister(node));
 			cfw.add(ByteCode.ATHROW);
 			break;
@@ -2253,7 +2280,7 @@ class BodyCodegen implements Kissaki_CodeTag
 				}
 			}
 			if (compilerEnv.isGenerateObserverCount())
-				addInstructionCount();
+				addInstructionCount2(node);
 			if (epilogueLabel == -1) {
 				if (!hasVarsInRegs) throw Codegen.badTree();
 				epilogueLabel = cfw.acquireLabel();
@@ -2263,7 +2290,7 @@ class BodyCodegen implements Kissaki_CodeTag
 
 		case Token.SWITCH:
 			if (compilerEnv.isGenerateObserverCount())
-				addInstructionCount();
+				addInstructionCount2(node);
 			visitSwitch((Node.Jump)node, child);
 			break;
 
@@ -2347,7 +2374,7 @@ class BodyCodegen implements Kissaki_CodeTag
 		case Token.TARGET:
 		{
 			if (compilerEnv.isGenerateObserverCount())
-				addInstructionCount();
+				addInstructionCount2(node);
 			int label = getTargetLabel(node);
 			cfw.markLabel(label);
 			if (compilerEnv.isGenerateObserverCount())
@@ -2360,7 +2387,7 @@ class BodyCodegen implements Kissaki_CodeTag
 		case Token.IFEQ:
 		case Token.IFNE:
 			if (compilerEnv.isGenerateObserverCount())
-				addInstructionCount(); 
+				addInstructionCount2(node); 
 			visitGoto((Node.Jump)node, type, child);
 			break;
 
@@ -2770,7 +2797,7 @@ class BodyCodegen implements Kissaki_CodeTag
 		case Token.POS:
 		case Token.NEG:
 			generateExpression(child, node);
-			addObjectToDouble();
+			addObjectToDouble2(node);
 			if (type == Token.NEG) {
 				cfw.add(ByteCode.DNEG);
 			}
@@ -2780,7 +2807,7 @@ class BodyCodegen implements Kissaki_CodeTag
 		case Token.TO_DOUBLE:
 			// cnvt to double (not Double)
 			generateExpression(child, node);
-			addObjectToDouble();
+			addObjectToDouble2(node);
 			break;
 
 		case Token.TO_OBJECT: {
@@ -4156,7 +4183,7 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 					"(Ljava/lang/Object;"
 					+"Ljava/lang/Object;"
 					+")Z",
-					null);
+					nullNode);
 			addGoto(caseNode.target, ByteCode.IFNE);
 		}
 		releaseWordLocal(selector);
@@ -4211,7 +4238,7 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 	/**
 	 * Save the current code offset. This saved code offset is used to
 	 * compute instruction counts in subsequent calls to
-	 * {@link #addInstructionCount()}.
+	 * {@link #addInstructionCount2()}.
 	 */
 	private void saveCurrentCodeOffset() {
 		savedCodeOffset = cfw.getCurrentCodeOffset();
@@ -4222,12 +4249,13 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 	 * executed instructions and call <code>observeInstructionCount()</code>
 	 * if a threshold is exceeded.<br>
 	 * Calculates the count from getCurrentCodeOffset - savedCodeOffset
+	 * @param node 
 	 */
-	private void addInstructionCount() {
+	private void addInstructionCount2(Node node) {
 		int count = cfw.getCurrentCodeOffset() - savedCodeOffset;
 		if (count == 0)
 			return;
-		addInstructionCount(count);
+		addInstructionCount2(count, node);
 	}
 
 	/**
@@ -4237,14 +4265,15 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 	 * Takes the count as a parameter - used to add monitoring to loops and 
 	 * other blocks that don't have any ops - this allows
 	 * for monitoring/killing of while(true) loops and such.
+	 * @param node 
 	 */
-	private void addInstructionCount(int count) {
+	private void addInstructionCount2(int count, Node node) {
 		cfw.addALoad(contextLocal);
 		cfw.addPush(count);
 		addScriptRuntimeInvoke2(CODE_ADDINSTRUCTIONCOUNT,
 				"(Lorg/mozilla/javascript/Context;"
 				+"I)V",
-				null);
+				node);
 	}
 
 	private void visitIncDec(Node node)
@@ -4281,7 +4310,7 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 				if (post) {
 					cfw.add(ByteCode.DUP);
 				}
-				addObjectToDouble();
+				addObjectToDouble2(node);
 				cfw.addPush(1.0);
 				if ((incrDecrMask & Node.DECR_FLAG) == 0) {
 					cfw.add(ByteCode.DADD);
@@ -4388,10 +4417,10 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 			boolean childOfArithmetic = isArithmeticNode(parent);
 			generateExpression(child, node);
 			if (!isArithmeticNode(child))
-				addObjectToDouble();
+				addObjectToDouble2(node);
 			generateExpression(child.getNext(), node);
 			if (!isArithmeticNode(child.getNext()))
-				addObjectToDouble();
+				addObjectToDouble2(node);
 			cfw.add(opCode);
 			if (!childOfArithmetic) {
 				addDoubleWrap();
@@ -4540,20 +4569,20 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 				// Left already has number content
 				generateExpression(child, node);
 			} else if (left_dcp_register != -1) {
-				dcpLoadAsNumber(left_dcp_register);
+				dcpLoadAsNumber2(left_dcp_register,node);
 			} else {
 				generateExpression(child, node);
-				addObjectToDouble();
+				addObjectToDouble2(node);
 			}
 
 			if (childNumberFlag != Node.LEFT) {
 				// Right already has number content
 				generateExpression(rChild, node);
 			} else if (right_dcp_register != -1) {
-				dcpLoadAsNumber(right_dcp_register);
+				dcpLoadAsNumber2(right_dcp_register, node);
 			} else {
 				generateExpression(rChild, node);
-				addObjectToDouble();
+				addObjectToDouble2(node);
 			}
 
 			genSimpleCompare(type, trueGOTO, falseGOTO);
@@ -4571,7 +4600,7 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 				"Ljava/lang/Class;");
 				cfw.add(ByteCode.IF_ACMPNE, leftIsNotNumber);
 				cfw.addDLoad(left_dcp_register + 1);
-				dcpLoadAsNumber(right_dcp_register);
+				dcpLoadAsNumber2(right_dcp_register, node);
 				genSimpleCompare(type, trueGOTO, falseGOTO);
 				if (stack != cfw.getStackTop()) throw Codegen.badTree();
 
@@ -4584,7 +4613,7 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 						"Ljava/lang/Class;");
 				cfw.add(ByteCode.IF_ACMPNE, rightIsNotNumber);
 				cfw.addALoad(left_dcp_register);
-				addObjectToDouble();
+				addObjectToDouble2(node);
 				cfw.addDLoad(right_dcp_register + 1);
 				genSimpleCompare(type, trueGOTO, falseGOTO);
 				if (stack != cfw.getStackTop()) throw Codegen.badTree();
@@ -4767,7 +4796,7 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 			// context, so test the object type and convert the
 			//  value as necessary.
 			if (node.getIntProp(Node.ISNUMBER_PROP, -1) != -1) {
-				dcpLoadAsNumber(reg);
+				dcpLoadAsNumber2(reg, node);
 			} else {
 				dcpLoadAsObject(reg);
 			}
@@ -5081,7 +5110,7 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 		return localSlot;
 	}
 
-	private void dcpLoadAsNumber(int dcp_register)
+	private void dcpLoadAsNumber2(int dcp_register, Node node)
 	{
 		cfw.addALoad(dcp_register);
 		cfw.add(ByteCode.GETSTATIC,
@@ -5092,7 +5121,7 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 		cfw.add(ByteCode.IF_ACMPEQ, isNumberLabel);
 		short stack = cfw.getStackTop();
 		cfw.addALoad(dcp_register);
-		addObjectToDouble();
+		addObjectToDouble2(node);
 		int beyond = cfw.acquireLabel();
 		cfw.add(ByteCode.GOTO, beyond);
 		cfw.markLabel(isNumberLabel, stack);
@@ -5125,9 +5154,9 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 		cfw.add(jumpcode, targetLabel);
 	}
 
-	private void addObjectToDouble()
+	private void addObjectToDouble2(Node node)
 	{
-		addScriptRuntimeInvoke2(CODE_TONUMBER, "(Ljava/lang/Object;)D",null);
+		addScriptRuntimeInvoke2(CODE_TONUMBER, "(Ljava/lang/Object;)D",node);
 	}
 
 	private void addNewObjectArray(int size)
@@ -5156,32 +5185,30 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 		
 		addScriptRuntimeInvoke(methodName, methodSignature);
 		
-		//メソッドが匿名だったら無視する
-
-		if (node == null) {
-			return;
-		}
-		//debug.trace("node_"+node);
+		//匿名メソッドであっても、何であっても、型類推に使う。
 		
-		
-		
-		
-		
-		OptFunctionNode nodeHead = fnCurrent;
-		if (nodeHead == null) {
-			return;
-		}
-		
-		String methodParentName = "";
-		try {
-			FunctionNode fNode = nodeHead.fnode;
-			//debug.trace("fNode_"+fNode);
-			methodParentName = fNode.getFunctionName();
-			debug.trace("methodParentName_"+methodParentName);
-		} catch (Exception e) {
-			debug.trace("methodParentName_"+null);
-		}
-		
+//		if (false) {
+//			/**
+//			 * パラメータ名の割り出しを行う。
+//			 */
+//			OptFunctionNode nodeHead = fnCurrent;
+//			if (nodeHead == null) {
+//				return;
+//			}
+//			
+//			/**
+//			 * 一応、パラメータをもつメソッドを探ってみる
+//			 */
+//			String methodParentName = "";
+//			try {
+//				FunctionNode fNode = nodeHead.fnode;
+//				//debug.trace("fNode_"+fNode);
+//				methodParentName = fNode.getFunctionName();
+//				debug.trace("methodParentName_"+methodParentName);
+//			} catch (Exception e) {
+//				debug.trace("methodParentName_"+null);
+//			}
+//		}
 //		String scopeName = "";
 //		try {
 //			FunctionNode scopeNode = (FunctionNode)node.getScope();
@@ -5192,192 +5219,221 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 //		}
 //		debug.trace("scriptOrFn_"+scriptOrFn);
 		
-		
+
 		String paramName = "";
 		try {
 			paramName = node.getString();
+			//if (node.getType() == nullNode.getType() ) return;
+			if (paramName.equals("arguments")) {
+				debug.trace("argumentsゲット");
+			}
 			debug.trace("paramName_"+paramName);
 		} catch (Exception e) {
-			return;
-//			debug.trace("paramName_"+"");
+//			return;
+			debug.trace("paramName_"+"////"+e);
+			//nullとClassCastExceptが出る。どうすっかな。
 		}
 		
-//		int varIndex = -1;
-//		
-//		try {
-//			FunctionNode fNode = nodeHead.fnode;
-//			varIndex = fNode.getIndexForNameNode(node);//reg
-//			debug.trace("varIndex_"+varIndex);
-//		} catch (Exception e) {
-//			debug.trace("varIndex_"+-1);
-//		}
 		
 		
-		
-		if (methodName.matches(CODE_TYPEOF)) {
+		if (methodName.equals(CODE_TYPEOF)) {
 			debug.trace("タイプオブ");
 		}
-		else if (methodName.matches(CODE_LASTSTOREDSCRIPTABLE)) {
+		else if (methodName.equals(CODE_LASTSTOREDSCRIPTABLE)) {
 			debug.trace("ラストストアドスクリプタブル");
 		}
-		else if (methodName.matches(CODE_INITSCRIPT)) {
+		else if (methodName.equals(CODE_INITSCRIPT)) {
 			debug.trace("イニットスクリプト");
 		}
-		else if (methodName.matches(CODE_GETVALUEFUNCTIONANDTHIS)) {
+		else if (methodName.equals(CODE_GETVALUEFUNCTIONANDTHIS)) {
 			debug.trace("ゲットバリューファンクションネームドディス");
 		}
-		else if (methodName.matches(CODE_CREATEFUNCTIONACTUIVATION)) {
+		else if (methodName.equals(CODE_CREATEFUNCTIONACTUIVATION)) {
 			debug.trace("クリエイトファンクションアクティベーション");
+//			いきなり、、、メソッドなのにここに来るやつがいる。メソッド登録もここなのかも。
 		}
-		else if (methodName.matches(CODE_ENTERFUNCTIONACTUIVATION)) {
+		else if (methodName.equals(CODE_ENTERFUNCTIONACTUIVATION)) {
 			debug.trace("エンターファンクションアクティベーション");
 		}
-		else if (methodName.matches(CODE_EXITFUNCTIONACTUIVATION)) {
+		else if (methodName.equals(CODE_EXITFUNCTIONACTUIVATION)) {
 			debug.trace("エグジットファンクションアクティベーション");
 		}
-		else if (methodName.matches(CODE_TOBOOLEAN)) {
-			debug.trace("トゥーブーリアン");
-		}
-		else if (methodName.matches(CODE_GETOBJECTELEM)) {
+		else if (methodName.equals(CODE_GETOBJECTELEM)) {
 			debug.trace("ゲットオブジェトエレム");
 		}
-		else if (methodName.matches(CODE_GETOBJECTPROPNOWARN)) {
+		else if (methodName.equals(CODE_GETOBJECTPROPNOWARN)) {
 			debug.trace("ゲットオブジェクトプロップノーワーン");
 		}
-		else if (methodName.matches(CODE_GETOBJECTPROP)) {
+		else if (methodName.equals(CODE_GETOBJECTPROP)) {
 			debug.trace("ゲットオブジェクトプロップ");
 		}
-		else if (methodName.matches(CODE_SHALLOW_EQ)) {
+		else if (methodName.equals(CODE_SHALLOW_EQ)) {
 			debug.trace("シャローイコール");
 		}
-		else if (methodName.matches(CODE_PADARGUMENTS)) {
+		else if (methodName.equals(CODE_PADARGUMENTS)) {
 			debug.trace("パッドアーギュメント");
 		}
-		else if (methodName.matches(CODE_CMPLE)) {
+		else if (methodName.equals(CODE_CMPLE)) {
 			debug.trace("コンプLE");
 		}
-		else if (methodName.matches(CODE_GETPROPFUNCTIONANDTHIS)) {
+		else if (methodName.equals(CODE_GETPROPFUNCTIONANDTHIS)) {
 			debug.trace("ゲットプロップファンクションアンドディス");
 		}
-		else if (methodName.matches(CODE_TONUMBER)) {
-			debug.trace("トゥーナンバー_"+methodName);	
-		}
-		else if (methodName.matches(CODE_CMPLT)) {
+		else if (methodName.equals(CODE_CMPLT)) {
 			debug.trace("コンプLT");
 		}
-		else if (methodName.matches(CODE_SETPBJECTELEM)) {
+		else if (methodName.equals(CODE_SETPBJECTELEM)) {
 			debug.trace("セットオブジェクトエレム");
 		}
-		else if (methodName.matches(CODE_ENTERWITH)) {
+		else if (methodName.equals(CODE_ENTERWITH)) {
 			debug.trace("エンターウィズ");
 		}
-		else if (methodName.matches(CODE_NEWCATCHSCOPE)) {
+		else if (methodName.equals(CODE_NEWCATCHSCOPE)) {
 			debug.trace("ニューキャッチスコープ");
 		}
-		else if (methodName.matches(CODE_LEAVEWITH)) {
+		else if (methodName.equals(CODE_LEAVEWITH)) {
 			debug.trace("リーブウィズ");
 		}
-		else if (methodName.matches(CODE_NAMEINCRDECR)) {
+		else if (methodName.equals(CODE_NAMEINCRDECR)) {
 			debug.trace("ネームインクルデクル");
 		}
-		else if (methodName.matches(CODE_TYPEOFNAME)) {
+		else if (methodName.equals(CODE_TYPEOFNAME)) {
 			debug.trace("タイプオブネーム");
 		}
-		else if (methodName.matches(CODE_LATEST)) {
+		else if (methodName.equals(CODE_LATEST)) {
 			debug.trace("レイテスト");
 		}
-		else if (methodName.matches(CODE_NEWOBJECT)) {
+		else if (methodName.equals(CODE_NEWOBJECT)) {
 			debug.trace("ニューオブジェクト");
 		}
-		else if (methodName.matches(CODE_GETNAMEFUNCTIONANDTHIS)) {
+		else if (methodName.equals(CODE_GETNAMEFUNCTIONANDTHIS)) {
 			debug.trace("ゲットネームファンクションアンドディス");
 		}
-		else if (methodName.matches(CODE_ENUMINIT)) {
+		else if (methodName.equals(CODE_ENUMINIT)) {
 			debug.trace("エナムイニット");
 		}
-		else if (methodName.matches(CODE_ENUMID)) {
+		else if (methodName.equals(CODE_ENUMID)) {
 			debug.trace("エナムアイディー");
 		}
-		else if (methodName.matches(CODE_ENUMNEXT)) {
+		else if (methodName.equals(CODE_ENUMNEXT)) {
 			debug.trace("エナムネクスト");
 		}
-		else if (methodName.matches(CODE_GETELEMFUNCTIONANDTHIS)) {
+		else if (methodName.equals(CODE_GETELEMFUNCTIONANDTHIS)) {
 			debug.trace("ゲットエレムファンクションアンドディス");
 		}
-		else if (methodName.matches(CODE_EQ)) {
-			debug.trace("イコール");
+		else if (methodName.equals(CODE_PROPINCRDECR)) {
+			debug.trace("プロップインクルデクル");//一寸気になる。
 		}
-		else if (methodName.matches(CODE_TOINT32)) {
-			debug.trace("トゥーイント32");
-		}
-		else if (methodName.matches(CODE_PROPINCRDECR)) {
-			debug.trace("プロップインクルデクル");
-		}
-		else if (methodName.matches(CODE_DELETE)) {
+		else if (methodName.equals(CODE_DELETE)) {
 			debug.trace("デリート");
 		}
-		else if (methodName.matches(CODE_TOUINT32)) {
-			debug.trace("トゥーアンサインドイント32");
-		}
-		else if (methodName.matches(CODE_INSTANCEOF)) {
+		else if (methodName.equals(CODE_INSTANCEOF)) {
 			debug.trace("インスタンスオブ");
 		}
-		else if (methodName.matches(CODE_ENTERDOTQUERY)) {
+		else if (methodName.equals(CODE_ENTERDOTQUERY)) {
 			debug.trace("エンタードットクエリー");
 		}
-		else if (methodName.matches(CODE_CALLREF))  {
+		else if (methodName.equals(CODE_CALLREF))  {
 			debug.trace("コールレフ");
 		}
-		else if (methodName.matches(CODE_GETOBJECTINDEX)) {
+		else if (methodName.equals(CODE_GETOBJECTINDEX)) {
 			debug.trace("ゲットオブジェクトインデックス");		
-		} else if (methodName.matches(CODE_ELEMINCRDECR)) {
+		} else if (methodName.equals(CODE_ELEMINCRDECR)) {
 			debug.trace("エレムインクルデクル"); 
-		} else if (methodName.matches(CODE_REFINCRDECR)) {
+		} else if (methodName.equals(CODE_REFINCRDECR)) {
 			debug.trace("レフインクルデクル");
-		} else if (methodName.matches(CODE_REFSET)) {
+		} else if (methodName.equals(CODE_REFSET)) {
 			debug.trace("レフセット");
-		} else if (methodName.matches(CODE_REFDEL)) {
+		} else if (methodName.equals(CODE_REFDEL)) {
 			debug.trace("レフデル");
-		} else if (methodName.matches(CODE_REFGET)) {
+		} else if (methodName.equals(CODE_REFGET)) {
 			debug.trace("レフゲット");
-		} else if (methodName.matches(CODE_SPECIALREF)) {
+		} else if (methodName.equals(CODE_SPECIALREF)) {
 			debug.trace("スペシャルレフ");
-		} else if (methodName.matches(CODE_ESCAPEATTRIBUTEVALUE)) {
+		} else if (methodName.equals(CODE_ESCAPEATTRIBUTEVALUE)) {
 			debug.trace("エスケープアトリビュートバリュー");
-		} else if (methodName.matches(CODE_ESCAPETEXTVALUE)) {
+		} else if (methodName.equals(CODE_ESCAPETEXTVALUE)) {
 			debug.trace("エスケープテキストバリュー");
-		} else if (methodName.matches(CODE_SETDEFAULTNAMESPACE)) {
+		} else if (methodName.equals(CODE_SETDEFAULTNAMESPACE)) {
 			debug.trace("セットデフォルトネームスペース");
-		} else if (methodName.matches(CODE_WRAPINT)) {
-			debug.trace("ラップイント");
-		} else if (methodName.matches(CODE_SETCONST)) {
-			debug.trace("セットコンスト");
-		} else if (methodName.matches(CODE_SETOBJECTINDEX)) {
-			debug.trace("セットオブジェクトインデックス");
-		} else if (methodName.matches(CODE_SETOBJECTPROP)) {
-			debug.trace("セットオブジェクトプロップ");
-		} else if (methodName.matches(CODE_LEAVEDOTQUERY)) {
-			debug.trace("リーブドットクエリー");
-		} else if (methodName.matches(CODE_UPDATEDOTQUERY)) {
-			debug.trace("アップデートドットクエリー");
-		}else if (methodName.matches(CODE_SETOBJECT_PROP)) {
-			debug.trace("セットオブジェクト");
-		}else if (methodName.matches(CODE_NAME)) {
-			debug.trace("ネーム");
-		}else if (methodName.matches(CODE_NEWOBJECTLITERAL)) {
-			debug.trace("ニューオブジェクトリテラル");
-		}else if (methodName.matches(CODE_ADD)) {
-			debug.trace("アド");
-		}else if (methodName.matches(CODE_BIND)) {
-			debug.trace("バインド");
-		}else if (methodName.matches(CODE_SETNAME)) {
-			debug.trace("セットネーム");
 		}
+		else if (methodName.equals(CODE_SETCONST)) {
+			debug.trace("セットコンスト");
+		} else if (methodName.equals(CODE_SETOBJECTINDEX)) {
+			debug.trace("セットオブジェクトインデックス");
+		} else if (methodName.equals(CODE_SETOBJECTPROP)) {
+			debug.trace("セットオブジェクトプロップ");
+		} else if (methodName.equals(CODE_LEAVEDOTQUERY)) {
+			debug.trace("リーブドットクエリー");
+		} else if (methodName.equals(CODE_UPDATEDOTQUERY)) {
+			debug.trace("アップデートドットクエリー");
+		}else if (methodName.equals(CODE_SETOBJECT_PROP)) {
+			debug.trace("セットオブジェクト");
+		}
+		
+		
+		//JSObject
+		else if (methodName.equals(CODE_BIND)) {
+			debug.trace("バインド");
+			col.updateParamByName(paramName, TYPE_ENUM.TYPE_JAVASCRIPTOBJECT);
+		}
+		
+		
+		
+		//bool
+		else if (methodName.equals(CODE_TOBOOLEAN)) {
+			debug.trace("トゥーブーリアン");
+			col.updateParamByName(paramName, TYPE_ENUM.TYPE_BOOLEAN);
+		}
+		
+		//数値系
+		else if (methodName.equals(CODE_TOINT32)) {
+			debug.trace("トゥーイント32");
+			col.updateParamByName(paramName, TYPE_ENUM.TYPE_DOUBLE);
+		}
+		else if (methodName.equals(CODE_TOUINT32)) {
+			debug.trace("トゥーアンサインドイント32");
+			col.updateParamByName(paramName, TYPE_ENUM.TYPE_DOUBLE);
+		}
+		else if (methodName.equals(CODE_WRAPINT)) {//ok2
+			debug.trace("ラップイント");
+			col.updateParamByName(paramName, TYPE_ENUM.TYPE_DOUBLE);
+		}
+		else if (methodName.equals(CODE_TONUMBER)) {//ok
+			debug.trace("トゥーナンバー_"+methodName);
+			col.updateParamByName(paramName, TYPE_ENUM.TYPE_DOUBLE);
+		}
+		
+		
+		//文字列系
+		else if (methodName.equals(CODE_NAME)) {
+			debug.trace("ネーム");
+			col.updateParamByName(paramName, TYPE_ENUM.TYPE_STRING);
+		}
+		else if (methodName.equals(CODE_SETNAME)) {
+			debug.trace("セットネーム");
+			col.updateParamByName(paramName, TYPE_ENUM.TYPE_STRING);
+		}
+		else if (methodName.equals(CODE_EQ)) {
+			debug.trace("イコール");
+			col.updateParamByName(paramName, TYPE_ENUM.TYPE_STRING);
+		}
+		
+		
+		else if (methodName.equals(CODE_NEWOBJECTLITERAL)) {
+			debug.trace("ニューオブジェクトリテラル");
+		}
+		else if (methodName.equals(CODE_ADD)) {
+			debug.trace("アド");
+		}
+		
+
+		
 		else {
 			debug.trace("addScriptRuntimeInvoke2_methodName_"+methodName);
 			//debug.assertTrue(false, "失敗");
 		}
-
+		
 	}
 	
 	private void addScriptRuntimeInvoke(String methodName,

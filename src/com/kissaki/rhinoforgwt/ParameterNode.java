@@ -70,9 +70,9 @@ public class ParameterNode implements CollectionType {
 	 * パラメータへの型入力を行う
 	 * @param paramType the paramType to set
 	 */
-	public String setParamType(TYPE_ENUM checkType) {
+	public TYPE_ENUM setParamType(TYPE_ENUM checkType) {
 		this.paramType = CollectionType.TYPE_ENUM.getHighType(getParamType(), checkType);
-		return this.paramName;
+		return this.paramType;
 	}
 	
 
@@ -82,7 +82,7 @@ public class ParameterNode implements CollectionType {
 	 * @return
 	 */
 	public boolean isParamNameAlerdyUse(String string) {
-		return paramName.matches(string);
+		return paramName.equals(string);
 	}
 
 

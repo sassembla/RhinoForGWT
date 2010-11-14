@@ -51,6 +51,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.kissaki.rhinoforgwt.JavaFileCreator;
+import com.kissaki.subFrame.Debug;
+
 /**
  * This class implements the JavaScript parser.
  *
@@ -85,7 +88,7 @@ public class Parser
 
     private int nestingOfFunction;
 
-    private Decompiler decompiler;
+    Decompiler decompiler;
     private String encodedSource;
 
 // The following are per function variables and should be saved/restored
@@ -99,6 +102,8 @@ public class Parser
     private ObjArray loopAndSwitchSet;
     private int endFlags;
 // end of per function variables
+
+	Debug debug;
     
     public int getCurrentLineNumber() {
         return ts.getLineno();
@@ -112,13 +117,16 @@ public class Parser
 
     public Parser(CompilerEnvirons compilerEnv, ErrorReporter errorReporter)
     {
+    	debug = new Debug(this);
+		debug.setDebug(Debug.DEBUG_FALSE);
+		
         this.compilerEnv = compilerEnv;
         this.errorReporter = errorReporter;
     }
 
     protected Decompiler createDecompiler(CompilerEnvirons compilerEnv)
     {
-        return new Decompiler();
+    	return new Decompiler(debug);
     }
 
     void addStrictWarning(String messageId, String messageArg)

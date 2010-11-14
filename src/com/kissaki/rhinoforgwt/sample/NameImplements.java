@@ -7,7 +7,7 @@ package com.kissaki.rhinoforgwt.sample;
  *
  */
 public class NameImplements//完了
-	implements Name {
+	implements NameInterface {
 
 	//完了
 	

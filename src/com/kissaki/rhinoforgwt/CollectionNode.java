@@ -2,6 +2,7 @@ package com.kissaki.rhinoforgwt;
 
 import java.util.ArrayList;
 
+import com.kissaki.rhinoforgwt.CollectionType.DEFINITION_ENUM;
 import com.kissaki.rhinoforgwt.CollectionType.TYPE_ENUM;
 import com.kissaki.subFrame.Debug;
 
@@ -20,7 +21,7 @@ import com.kissaki.subFrame.Debug;
  *
  */
 public class CollectionNode implements CollectionType {
-	
+
 	
 	Debug debug = null;
 
@@ -29,11 +30,10 @@ public class CollectionNode implements CollectionType {
 	
 	/**
 	 * コンストラクタ
-	 * @param string2 
+	 * @param string
 	 */
-	public CollectionNode (String string2) {
+	public CollectionNode (String string) {
 		debug = new Debug(this);
-		debug.trace("名前がついています_"+string2);
 		methodNodeArrayList = new ArrayList<MethodNode>();
 	}
 
@@ -74,7 +74,7 @@ public class CollectionNode implements CollectionType {
 //		debug.trace("insertMethod_"+string);
 //		debug.trace("before_"+getNowMethodName());
 		if (!isMethodNameAlreadyExist(string)) {//未登録のメソッドを登録する、
-			//debug.trace("new Method_"+getNowMethodName());
+			debug.trace("new_Method_"+string);
 			MethodNode mNode = new MethodNode();
 			mNode.setMethodName(string);
 			methodNodeArrayList.add(mNode);
@@ -84,8 +84,9 @@ public class CollectionNode implements CollectionType {
 	
 	
 	/**
-	 * 現在フォーカスしているメソッド名に対して、パラメータとレジスタを追加する
-	 * パラメータ名が既に使用されていたらエラーを返す
+	 * メソッド名に対して、パラメータを追加する
+	 * パラメータを保持しているメソッドが存在しなければ、グローバル上の型をアップデートする。
+	 * パラメータが存在しなければ
 	 */
 	public void insertParam(String methodName, String paramName, DEFINITION_ENUM defineType) throws IllegalArgumentException {
 		
@@ -95,11 +96,13 @@ public class CollectionNode implements CollectionType {
 		for (int i = 0; i < methodNodeArrayList.size(); i++) {
 			MethodNode mNode = methodNodeArrayList.get(i);
 			
-			if (mNode.getMethodName().matches(methodName)) {//メソッドノード確定、あとは放り込む
+			if (mNode.getMethodName().equals(methodName)) {//メソッドノード確定、あとは放り込む
 				mNode.addpNodeParam(paramName, TYPE_ENUM.TYPE_JAVASCRIPTOBJECT, defineType);
 			}
 		}
 		
+		//どのメソッドも持っていないパラメータであれば、グローバルに追加する。
+		//TODO
 	}
 	
 
@@ -119,21 +122,34 @@ public class CollectionNode implements CollectionType {
 	 * @throws IllegalArgumentException
 	 */
 	public void updateParamByName(String paramName, TYPE_ENUM paramType) throws IllegalArgumentException{
-
 		
 		for (int i = 0; i < methodNodeArrayList.size(); i++) {
 			MethodNode mNode = methodNodeArrayList.get(i);
 			if (mNode.hasParam(paramName) != null) {
-				ParameterNode pNode = mNode.hasParam(paramName);
-				pNode.setParamType(paramType);
+				mNode.updateParam(paramName, paramType);
 				return;
 			}
 		}
-
-		throw new IllegalArgumentException("updateParamByName_今まで存在しないパラメータをアップデートしようとしている_"+paramType);
+		
+		//どのメソッドも引数として所有していない場合、匿名メソッドの物として処理する
+		//グローバルパラメータ
+		insertParamToGlobal(paramName, paramType);
 	}
 
-	
+
+	/**
+	 * グローバルな空間(無名、"")のメソッドを作成し、その中にargではなくparamとして放り込む
+	 * @param paramName
+	 * @param paramType
+	 */
+	private void insertParamToGlobal(String paramName, TYPE_ENUM paramType) {
+		insertMethod("");
+		insertParam("", paramName, DEFINITION_ENUM.DEFINE_PARAM);
+		updateParamByName(paramName, paramType);
+	}
+
+
+
 	/**
 	 * 登録されているメソッド名を返す
 	 * メソッド名にメインのインスタンス作成メソッドは含まれない。
@@ -158,7 +174,7 @@ public class CollectionNode implements CollectionType {
 		
 		for (int i = 0; i < methodNodeArrayList.size(); i++) {
 			MethodNode mNode = methodNodeArrayList.get(i);
-			if (mNode.getMethodName().matches(string2)) return true;
+			if (mNode.getMethodName().equals(string2)) return true;
 		}
 		
 		return false;
@@ -177,7 +193,7 @@ public class CollectionNode implements CollectionType {
 		
 		for (int i = 0; i < methodNodeArrayList.size(); i++) {
 			MethodNode mNode = methodNodeArrayList.get(i);
-			if (mNode.getMethodName().matches(methodName)) {
+			if (mNode.getMethodName().equals(methodName)) {
 				return mNode.getpNodeSize();
 			}
 		}
@@ -196,7 +212,7 @@ public class CollectionNode implements CollectionType {
 		
 		for (int i = 0; i < methodNodeArrayList.size(); i++) {
 			MethodNode mNode = methodNodeArrayList.get(i);
-			if (mNode.getMethodName().matches(methodName)) {
+			if (mNode.getMethodName().equals(methodName)) {
 				return mNode.getAllParamName();
 			}
 		}
@@ -214,7 +230,7 @@ public class CollectionNode implements CollectionType {
 		
 		for (int i = 0; i < methodNodeArrayList.size(); i++) {
 			MethodNode mNode = methodNodeArrayList.get(i);
-			if (mNode.getMethodName().matches(methodName)) {
+			if (mNode.getMethodName().equals(methodName)) {
 				return mNode.getAllParamType();
 			}
 		}
@@ -257,7 +273,7 @@ public class CollectionNode implements CollectionType {
 		}
 		
 		
-		debug.trace("s2_"+s2);
+		//debug.trace("s2_"+s2);
 		s.append("void"+" "+mNode.methodName+ " ("+s2.toString()+")");
 		
 		return s.toString();
@@ -276,7 +292,7 @@ public class CollectionNode implements CollectionType {
 		}
 		
 		StringBuffer s1 = new StringBuffer();
-		s1.append("	getIstanceOfJSObject()."+mNode.getMethodName()+"("+ s2.toString() +");");
+		s1.append("	"+ TENPLATE_OBJECT +mNode.getMethodName()+"("+ s2.toString() +");");
 		return s1.toString();
 	}
 

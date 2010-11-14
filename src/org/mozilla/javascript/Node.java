@@ -422,7 +422,11 @@ public class Node
         lineno = line;
     }
 
-    public static Node newNumber(double number) {
+    public Node() {
+    	type = 160;
+	}
+
+	public static Node newNumber(double number) {
         return new NumberNode(number);
     }
 

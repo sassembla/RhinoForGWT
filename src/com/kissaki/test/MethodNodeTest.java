@@ -52,38 +52,11 @@ public class MethodNodeTest extends TestCase {
 	}
 	
 	
-	public void testAddpNodeParam () {
-		
-		test.addpNodeParam("テスト用のパラメータ名", TYPE_ENUM.TYPE_STRING, DEFINITION_ENUM.DEFINE_ARG);//成立する
-		
-		/**
-		 * チェックの優先順位はどうする？
-		 * 名前の重複は、regの重複にならない場合別物で同じ名称のargがあるとして、エラーをはく
-		 * 
-		 * 同一名称以外でのregの重複はエラーを返す
-		 * 
-		 * 型の重複は見ない
-		 */
-		try {
-			test.addpNodeParam("テスト用のパラメータ名", TYPE_ENUM.TYPE_STRING, DEFINITION_ENUM.DEFINE_ARG);
-			assertTrue("成立してはいけない_名称が同じでregが異なるケース",false);
-		} catch (Exception e) {
-			
-		}
-	}
+	
+
 	
 	
-	public void testAddpNodeParam3 () {
-		test.addpNodeParam("テスト用のパラメータ名1", TYPE_ENUM.TYPE_STRING, DEFINITION_ENUM.DEFINE_ARG);
-		
-		try {
-			test.addpNodeParam("テスト用のパラメータ名1", TYPE_ENUM.TYPE_STRING, DEFINITION_ENUM.DEFINE_ARG);
-			assertTrue("成立してはいけない_名称とregが同じケース",false);
-		} catch (Exception e) {
-			
-		}
-	}
-	
+
 	
 	/**
 	 * メソッド内のパラメータ名一覧を返す（確認用）
@@ -151,5 +124,26 @@ public class MethodNodeTest extends TestCase {
     	}
     	assertTrue("パラメータが有る事になってません",b);
 	}
+    
+    /**
+     * 入力したパラメータの型一致がなされているか
+     * getParamTypeのテスト
+     */
+    public void testGetparamType () {
+    	test.addpNodeParam("パラメータ",  TYPE_ENUM.TYPE_STRING, DEFINITION_ENUM.DEFINE_ARG);
+		
+    	assertTrue("タイプ一致しない",test.getParamType("パラメータ") == TYPE_ENUM.TYPE_STRING);
+    	
+	}
+    
+    /**
+     * 入力したパラメータの更新が出来るか
+     */
+    public void testUpdateParam () {
+    	test.addpNodeParam("パラメータ",  TYPE_ENUM.TYPE_STRING, DEFINITION_ENUM.DEFINE_ARG);
+		
+    	test.updateParam("パラメータ", TYPE_ENUM.TYPE_DOUBLE);
+    	assertTrue("型が一致しない", test.getParamType("パラメータ") == TYPE_ENUM.TYPE_DOUBLE);
+    }
     
 }

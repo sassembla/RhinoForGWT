@@ -1,6 +1,6 @@
 package com.kissaki.rhinoforgwt.sample;
 
-public interface Name {
+public interface NameInterface {
 
 //	public void set"メインの名前"JSObject (JavaScriptObject aElement, JavaScriptObject aCode);
 //	public JavaScriptObject get"メインの名前"JSObject ();

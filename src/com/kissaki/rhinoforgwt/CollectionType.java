@@ -6,12 +6,14 @@ package com.kissaki.rhinoforgwt;
  * 型定義はEnum として実装してある。
  * 実装宣言順がより高い型が優先される。
  * 
- * 優先順位は　Object << String << Integer << Double　
+ * 型の優先順位は残念ながら全体固定で、　Object << String << Integer << Double　
  * JavaScript　から、　Java への変換に際して、一番注意を払う部分。
  * @author sassembla
  *
  */
 public interface CollectionType {
+	public final String TENPLATE_OBJECT = "getInstanceOfJSObject().";
+	
 	
 	public enum TYPE_ENUM {
 		TYPE_NULL,
@@ -68,15 +70,15 @@ public interface CollectionType {
 	
 	/**
 	 * argument/引数か、parameter/パラメータかを指定するEnum
-	 * 
-	 * 優先順位は存在しないので、初期値は残らない。
+	 * 引数か、内部パラメータか、無名関数の内容か
 	 * @author sassembla
 	 *
 	 */
 	public enum DEFINITION_ENUM {
 		NO_DEFINITION,
 		DEFINE_ARG,
-		DEFINE_PARAM;
+		DEFINE_PARAM,
+		DEFINE_UNKNOWN;
 	}
 	/**
 	 * メソッドの帰り値

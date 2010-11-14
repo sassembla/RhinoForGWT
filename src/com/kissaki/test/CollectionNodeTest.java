@@ -3,6 +3,7 @@ package com.kissaki.test;
 import junit.framework.TestCase;
 
 import com.kissaki.rhinoforgwt.CollectionNode;
+import com.kissaki.rhinoforgwt.CollectionType;
 import com.kissaki.rhinoforgwt.MethodNode;
 import com.kissaki.rhinoforgwt.CollectionType.DEFINITION_ENUM;
 import com.kissaki.rhinoforgwt.CollectionType.METHOD_TYPE;
@@ -14,7 +15,7 @@ import com.kissaki.subFrame.Debug;
  * @author sassembla
  *
  */
-public class CollectionNodeTest extends TestCase {
+public class CollectionNodeTest extends TestCase implements CollectionType {
 	Debug debug = null;
 	CollectionNode test = null;
 	
@@ -56,7 +57,7 @@ public class CollectionNodeTest extends TestCase {
 		
 		//このパラメータを持つメソッドが返ってくる
 		MethodNode node = test.getMethodHasParam("パラメータ1");
-		assertTrue("メソッド名が一致しない", node.getMethodName() == "メソッド名");
+		assertTrue("メソッド名が一致しない", node.getMethodName().equals("メソッド名"));
 	}
 	
 
@@ -101,17 +102,25 @@ public class CollectionNodeTest extends TestCase {
 	
 	
 	/**
-	 * パラメータ名として存在しない名称のパラメータへと、型入力が行われた際にエラーを出す
+	 * パラメータ名として存在しない名称のパラメータへと、型入力が行われた際、
+	 * 無名メソッドへとパラメータを追加する。
 	 */
 	public void testNotExistName () {
 		test.insertMethod("メソッド名");
 		test.insertParam("メソッド名", "パラメータ1", DEFINITION_ENUM.DEFINE_ARG);
 		
-		try {
-			test.updateParamByName("パラメータ2", TYPE_ENUM.TYPE_STRING);//存在しない名称パラメータへとstr_type型をセット
-			assertTrue("成立してはいけない_パラメータ名として存在しない名称のパラメータへと、型入力",false);
-		} catch (Exception e) {
-			
-		}
+		test.updateParamByName("パラメータ2", TYPE_ENUM.TYPE_STRING);//存在しない名称パラメータへとstr_type型をセット、グローバルとして扱われる。
+		
+		TYPE_ENUM typeName [] = test.getNowMethodParameterTypes("");//匿名メソッド
+		assertEquals(TYPE_ENUM.TYPE_STRING, typeName[0]);//メソッドのパラメータの型が一致
+		
 	}
+	
+	public void testNoArgMethod () {
+		test.insertMethod("メソッド名");
+		String s = test.getMethodExec(0);
+		String s2 = "	"+TENPLATE_OBJECT + "メソッド名"+"();";
+		assertEquals(s2, s);
+	}
+	
 }
