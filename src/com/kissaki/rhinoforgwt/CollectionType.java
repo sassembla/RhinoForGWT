@@ -12,8 +12,80 @@ package com.kissaki.rhinoforgwt;
  *
  */
 public interface CollectionType {
-	public final String TENPLATE_OBJECT = "getInstanceOfJSObject().";
 	
+	/*
+	 * 無名メソッドの定義
+	 */
+	public final String METHOD_NONANE = "";
+	
+	/*
+	 * 出力ファイルのパターン
+	 */
+	String FILE_PATTERN = "java";
+
+	/*
+	 * 修飾子
+	 */
+	String STRING_PACKAGE_DEFINITION = "package";
+	String STRING_IMPORT_DEFINITION = "import";
+	
+	
+	String STRING_KEY_PUBLIC = "public"; 
+	String STRING_KEY_PRIVATE = "private";
+	
+	String STRING_KEY_VOID = "void";
+	String STRING_KEY_CLASS = "class ";
+	
+	String STRING_KEY_IMPLEMENTS = "implements";
+	String STRING_KEY_INTERFACE = "interface";
+	
+	String STRING_FILEFOOTER_IMPLEMENTS = "Implements";
+	String STRING_FILEFOOTER_INTERFACE = "Interface";
+
+	String STRING_KEY_NATIVE = "native";
+	String STRING_KEY_JAVASCRIPTOBJECT = "JavaScriptObject";
+	String STRING_KEY_JAVASCRIPT_WINDOWOBJECT = "$wnd";
+	String STRING_KEY_JSNI_HEADER = "/*-";
+	String STRING_KEY_JSNI_FOOTER = "-*/;";
+
+	String STRING_KEY_SETJAVASCRIPTMETHOD_HEADER = "setup";
+	
+	String STRING_KEY_INITIALJSOBJECT = "= null;";
+	
+	
+	String STRING_JSOBJECT_COMEENT_HEADER = "//JavaScriptObject of ";
+	String STRING_KEY_RETURN = "return";
+	
+	public final String TENPLATE_OBJECT = "getInstanceOfJSObject()";
+	
+	public final String TEMPLATE_OVERLOADED = "Overloaded_";
+	
+	
+	
+	/*
+	 * システム固有
+	 * Aと、_Aというメソッドが共存していて、かつ引数構成が同じ場合、困った事になる。
+	 */
+	public final String MIDDLE_METHODHEADER = "_";//中間メソッドの識別子
+	
+	
+	String STRING_DEFAULT_ARG_TYPE = STRING_KEY_JAVASCRIPTOBJECT;
+	
+	public static final String TYPE_NULL = "null";
+	public static final String TYPE_JAVASCRIPTOBJECT = "JavaScriptObject";
+	public static final String TYPE_STRING = "String";
+	public static final String TYPE_BOOLEAN = "boolean";
+	public static final String TYPE_DOUBLE = "double";
+	
+	public final String STRING_KEY_JSOBJECT = "JSObject";
+	
+	String TypeString [] = {
+			TYPE_NULL,
+			TYPE_JAVASCRIPTOBJECT,
+			TYPE_STRING, 
+			TYPE_BOOLEAN, 
+			TYPE_DOUBLE,//
+	};
 	
 	public enum TYPE_ENUM {
 		TYPE_NULL,
@@ -65,6 +137,23 @@ public interface CollectionType {
 			throw new IllegalArgumentException("該当するナンバーのTypeが設定されていない_"+number);
 		}
 		
+		/**
+		 * 該当するEnumのString表現を返す
+		 * @param number
+		 * @return
+		 * @throws IllegalArgumentException
+		 */
+		public static String getTypeString(TYPE_ENUM expression) throws IllegalArgumentException {
+			int i = 0;
+			for (TYPE_ENUM d : values()) {
+				if (expression.equals(d)) {
+					return TypeString[i];
+				}
+				i++;
+			}
+			throw new IllegalArgumentException("該当する種類のTypeが設定されていない_"+expression);
+		}
+		
 		
 	}
 	
@@ -78,6 +167,7 @@ public interface CollectionType {
 		NO_DEFINITION,
 		DEFINE_ARG,
 		DEFINE_PARAM,
+		DEFINE_OVERLOAD,
 		DEFINE_UNKNOWN;
 	}
 	/**
@@ -108,7 +198,6 @@ public interface CollectionType {
 		}
 	}
 	
-	public static final String METHOD_NAME_NULL = "noNameMethod_";//入力時に同名のメソッドがある可能性は　無いわけでは無い。。。　→匿名関数に付与される名称なのだが、先に名称リストを取得しておいた方がいいかもね。　その機会もあるし。 一致してしまう場合、避けるように、匿名名称を返すクラスを作ろう。
 	public static final String NAME_NULL = "";//無名のパラメータ（JSには存在しない、、筈）
 	
 }

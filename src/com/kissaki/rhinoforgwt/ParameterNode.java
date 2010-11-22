@@ -38,6 +38,14 @@ public class ParameterNode implements CollectionType {
 	public TYPE_ENUM getParamType() {
 		return paramType;
 	}
+	
+	/**
+	 * argの型を文字列で返す
+	 * @return
+	 */
+	public String getParamString() {
+		return CollectionType.TYPE_ENUM.getTypeString(getParamType());
+	}
 
 	/**
 	 * @param paramName the paramName to set

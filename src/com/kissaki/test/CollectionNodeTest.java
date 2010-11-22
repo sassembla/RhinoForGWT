@@ -22,7 +22,8 @@ public class CollectionNodeTest extends TestCase implements CollectionType {
 	@Override
 	protected void setUp() throws Exception {
 		debug = new Debug(this);
-		test = new CollectionNode("独自の名称をセットする");
+		test = new CollectionNode();
+		test.setMainName("");
 	}
 	
 	@Override
@@ -116,11 +117,204 @@ public class CollectionNodeTest extends TestCase implements CollectionType {
 		
 	}
 	
+	/**
+	 * 引数のないメソッドを取得するテスト？
+	 * 
+	 */
 	public void testNoArgMethod () {
 		test.insertMethod("メソッド名");
-		String s = test.getMethodExec(0);
+		String s = test.getMethodBody(0);
 		String s2 = "	"+TENPLATE_OBJECT + "メソッド名"+"();";
 		assertEquals(s2, s);
+	}
+	
+	
+	/**
+	 * パラメータを加えたメソッドのテスト
+	 * 期待した値が入っているか？
+	 */
+	public void testInsertParam2 () {
+		test.insertMethod("メソッド名");
+		test.insertParam("メソッド名", "パラメータ名１", DEFINITION_ENUM.DEFINE_ARG);//引数がある
+		test.updateParamByName("パラメータ名１", TYPE_ENUM.TYPE_STRING);
+		
+		String s = test.getMethodBody(0);
+		String s2 = "	"+TENPLATE_OBJECT + "メソッド名"+"(パラメータ名１);";
+		
+		assertEquals(s2, s);
+		
+	}
+	
+	/**
+	 * パラメータを複数加えたメソッドのテスト
+	 * 期待した値が入っているか？
+	 */
+	public void testInsertParam3 () {
+		test.insertMethod("メソッド名");
+		test.insertParam("メソッド名", "パラメータ名１", DEFINITION_ENUM.DEFINE_ARG);//引数がある
+		test.updateParamByName("パラメータ名１", TYPE_ENUM.TYPE_STRING);
+		
+		test.insertParam("メソッド名", "パラメータ名２", DEFINITION_ENUM.DEFINE_ARG);//引数がある
+		test.updateParamByName("パラメータ名２", TYPE_ENUM.TYPE_STRING);
+		
+		
+		String s = test.getMethodBody(0);
+		String s2 = "	"+TENPLATE_OBJECT + "メソッド名"+"(パラメータ名１, パラメータ名２);";
+		
+		assertEquals(s2, s);
+		
+	}
+	
+	/**
+	 * 可変長引数を求められた場合の処理をテストする
+	 * 
+	 * メソッドのオーバーロードになるので、メソッド自体が増えるのを確認する
+	 * メソッドの引数が増えるのを確認する
+	 * 
+	 * その後、メソッドの引数の型が更新されるのを確認する
+	 */
+	public void testInsertParamByIndex () {
+		test.insertMethod("メソッド名");
+		test.insertParam("メソッド名", "パラメータ名０", DEFINITION_ENUM.DEFINE_ARG);//引数がある
+		
+		test.insertParamByIndex("メソッド名", 1, DEFINITION_ENUM.DEFINE_OVERLOAD);//オーバーロードからの可能性がある入力
+		
+		//メソッド数が増えているはず
+		assertTrue("メソッド数が2つではない", test.getMethodNum() == 2);
+		
+		String s3 = test.getMethodBody(1);
+		String s4 = "	"+TENPLATE_OBJECT + "メソッド名"+"(メソッド名"+TEMPLATE_OVERLOADED+"0, メソッド名"+TEMPLATE_OVERLOADED+"1);";
+		
+		assertEquals(s4, s3);
+	}
+	
+	/**
+	 * 引数を一つも持っていないメソッドに対する、オーバーロードのテスト
+	 */
+	public void testInsertParamByIndexNoParam () {
+		test.insertMethod("メソッド名");
+		test.insertParamByIndex("メソッド名", 0, DEFINITION_ENUM.DEFINE_OVERLOAD);//オーバーロードからの可能性がある入力
+		
+		//メソッド数が増えているはず
+		assertTrue("メソッド数が2つではない", test.getMethodNum() == 2);
+		
+		String s3 = test.getMethodBody(1);
+		String s4 = "	"+TENPLATE_OBJECT + "メソッド名"+"(メソッド名"+TEMPLATE_OVERLOADED+"0);";
+		
+		assertEquals(s4, s3);
+	}
+	
+	/**
+	 * 引数0からindex10のパラメータを参照された場合、などのテスト
+	 */
+	public void testInsertParamByIndexParamAt10 () {
+		test.insertMethod("メソッド名");
+		
+		test.insertParamByIndex("メソッド名", 10, DEFINITION_ENUM.DEFINE_OVERLOAD);//オーバーロードからの可能性がある入力
+		
+		assertTrue("メソッド数が2ではない", test.getMethodNum() == 2);
+		
+		String s3 = test.getMethodBody(1);
+		String s4 = "	"+TENPLATE_OBJECT + "メソッド名"+"("+
+		"メソッド名"+TEMPLATE_OVERLOADED+"0,"+
+		" メソッド名"+TEMPLATE_OVERLOADED+"1,"+
+		" メソッド名"+TEMPLATE_OVERLOADED+"2,"+
+		" メソッド名"+TEMPLATE_OVERLOADED+"3,"+
+		" メソッド名"+TEMPLATE_OVERLOADED+"4,"+
+		" メソッド名"+TEMPLATE_OVERLOADED+"5,"+
+		" メソッド名"+TEMPLATE_OVERLOADED+"6,"+
+		" メソッド名"+TEMPLATE_OVERLOADED+"7,"+
+		" メソッド名"+TEMPLATE_OVERLOADED+"8,"+
+		" メソッド名"+TEMPLATE_OVERLOADED+"9,"+
+		" メソッド名"+TEMPLATE_OVERLOADED+"10"+");";
+		
+		assertEquals(s4, s3);
+	}
+	
+	/**
+	 * 特定の名称のメソッドを、メソッドノードから削除する
+	 */
+	public void testRemoveMethodsByNamed () {
+		test.insertMethod("メソッド名");
+		
+		test.removeMethodsByNamed("メソッド名");
+		
+		assertTrue("メソッド個数が0にならない", test.getMethodNum() == 0);
+	}
+	
+	/**
+	 * 特定の名称のメソッドを、メソッドノードから削除する
+	 * オーバーロードで複数が存在する場合
+	 */
+	public void testRemoveMethodsByNamedOverloaded () {
+		test.insertMethod("メソッド名");
+		
+		test.insertParamByIndex("メソッド名", 0, DEFINITION_ENUM.DEFINE_OVERLOAD);//オーバーロードからの可能性がある入力
+		
+		test.removeMethodsByNamed("メソッド名");
+		
+		assertTrue("メソッド個数が0にならない", test.getMethodNum() == 0);
+	}
+	
+	
+	
+	/**
+	 * コンストラクタのセッティングテスト、
+	 * コンストラクタの名称をマスター名からセットし、
+	 * 内部で同名のメソッドを探す。
+	 * 
+	 * メソッドが確認できた場合、
+	 * 	コンストラクタの引数にメソッドの引数をセットする
+	 * 	返り値をJSObjectにセットする
+	 * 
+	 * で、それをFileCreateから実践するには、コンストラクタのヘッダを返すメソッドと、
+	 * コンストラクタの内部を返すメソッドがあればOK。
+	 */
+	public void testConstructor () {
+		test.insertMethod("メソッド１");
+		
+		test.insertParam("メソッド１", "パラメータ１", DEFINITION_ENUM.DEFINE_ARG);
+		
+		//コンストラクタの引数がセットされているのをチェック
+		String header = test.getConstructorMethodHeader("メソッド１");
+		
+		
+		/**
+		 * public ProcessingJS_Implements(){
+			ProcessingJS_JSObject = setupProcessingJS_JSObject();
+			}
+		 */
+		
+		//public メソッド１ (JavaScriptObject パラメータ１)
+		assertEquals("public メソッド１Implements(JavaScriptObject パラメータ１)", header);
+		
+		//コンストラクタの文章内容がセットされているかチェック
+		String body = test.getConstructorMethodBody("メソッド１");
+		assertEquals("	"+"メソッド１JSObject = setupメソッド１JSObject(パラメータ１);", body);
+	}
+	
+	
+	public void testConstructorNotFound () {
+		test.insertMethod("メソッド１");
+		
+		test.insertParam("メソッド１", "パラメータ１", DEFINITION_ENUM.DEFINE_ARG);
+		
+		//コンストラクタの引数がセットされているのをチェック
+		String header = test.getConstructorMethodHeader("メソッド２");
+		
+		
+		/**
+		 * public ProcessingJS_Implements(){
+			ProcessingJS_JSObject = setupProcessingJS_JSObject();
+			}
+		 */
+		
+		//public メソッド１ (JavaScriptObject パラメータ１)
+		assertEquals("public メソッド２Implements()", header);
+		
+		//コンストラクタの文章内容がセットされているかチェック
+		String body = test.getConstructorMethodBody("メソッド２");
+		assertEquals("	"+"メソッド２JSObject = setupメソッド２JSObject();", body);
 	}
 	
 }

@@ -233,4 +233,17 @@ public class MethodNode implements CollectionType {
 		}
 		throw new IllegalArgumentException("updateParam_存在しないparamNameのタイプを更新している_"+paramName+"/paramType_"+paramType);
 	}
+
+	/**
+	 * 自分と同じメソッド名、メソッド型のMethodNodeクローンを返す。パラメータはコピーしない
+	 * @return
+	 */
+	public MethodNode getCopyWithoutParam() {
+		MethodNode mNode = new MethodNode();
+		//mNode.pNodeArrayList = (ArrayList<ParameterNode>) this.pNodeArrayList.clone();
+		mNode.setMethodName(this.getMethodName());
+		mNode.setMethodType(this.getMethodType());
+		
+		return mNode;
+	}
 }

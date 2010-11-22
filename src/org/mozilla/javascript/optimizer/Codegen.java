@@ -207,8 +207,8 @@ public class Codegen implements Evaluator
 		try {
 			debug.trace("開始");
 			
-			CollectionNode col = new CollectionNode("TEST");
-			col.setMainName("ProcessingJS_");
+			CollectionNode col = new CollectionNode();
+			col.setMainName("Processing");
 			//オブジェクトを吊るす
 			byte [] b = generateCode(encodedSource, col);
 			debug.trace("完結");
@@ -216,8 +216,9 @@ public class Codegen implements Evaluator
 			
 			
 			JavaFileCreator jFCreator = new JavaFileCreator();
-			jFCreator.procedure(col, "/", "仮aaaaa", "java");
-			
+			jFCreator.procedure(col, 
+					"/Applications/eclipse_helios_10_11_17_13-13-03/workspace/Kick/src/com/kissaki/client/",
+					"com.kissaki.client", "com.google.gwt.core.client.JavaScriptObject");
 			
 			jFCreator.output(debug.getDebugString(), "/", "codeGenDebug.java");//デバッグ出力
 			
@@ -2471,7 +2472,28 @@ class BodyCodegen implements Kissaki_CodeTag
 
 	private void generateExpression(Node node, Node parent)
 	{
+		try {//IDか何かとれるかな。
+			debug.trace("name_"+parent.getFirstChild().getString());
+		} catch (Exception e) {
+			debug.trace("err_"+e);
+		}
+		
 		int type = node.getType();
+		
+		if (argumentParamDetectMode == DETECT_DETECTED) {
+			if (type == Token.NUMBER) {
+				argumentParamDetectMode = DETECT_GOT;
+				int num = (int)node.getDouble();
+				
+
+				debug.trace("num_"+num);
+				
+				col.insertParamByIndex(argumentParamDetectMethodName, num, DEFINITION_ENUM.DEFINE_OVERLOAD);
+				
+				argumentParamDetectMode = DETECT_INITIALIZE;
+			}
+		}
+		
 		Node child = node.getFirstChild();
 		switch (type) {
 		case Token.USE_STACK:
@@ -2545,8 +2567,11 @@ class BodyCodegen implements Kissaki_CodeTag
 			break;
 
 		case Token.NUMBER:
-		{
+		{	
 			double num = node.getDouble();
+			if (checkMark) {
+				debug.trace("ナンバー確保_"+num);
+			}
 			if (node.getIntProp(Node.ISNUMBER_PROP, -1) != -1) {
 				cfw.addPush(num);
 			} else {
@@ -5175,6 +5200,14 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 		}
 	}
 
+	boolean checkMark = false;
+	final int DETECT_INITIALIZE = -1;//初期値
+	final int DETECT_DETECTED = 0;//argument探知完了
+	final int DETECT_GOT = 1;//獲得完了
+	
+	int argumentParamDetectMode = DETECT_INITIALIZE;
+	String argumentParamDetectMethodName = "";
+	
 	/**
 	 * 中間メソッド
 	 * @param methodName
@@ -5186,29 +5219,29 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 		addScriptRuntimeInvoke(methodName, methodSignature);
 		
 		//匿名メソッドであっても、何であっても、型類推に使う。
-		
-//		if (false) {
-//			/**
-//			 * パラメータ名の割り出しを行う。
-//			 */
-//			OptFunctionNode nodeHead = fnCurrent;
-//			if (nodeHead == null) {
-//				return;
-//			}
-//			
-//			/**
-//			 * 一応、パラメータをもつメソッドを探ってみる
-//			 */
-//			String methodParentName = "";
-//			try {
-//				FunctionNode fNode = nodeHead.fnode;
-//				//debug.trace("fNode_"+fNode);
-//				methodParentName = fNode.getFunctionName();
-//				debug.trace("methodParentName_"+methodParentName);
-//			} catch (Exception e) {
-//				debug.trace("methodParentName_"+null);
-//			}
-//		}
+		String methodParentName = "";
+		if (true) {
+			/**
+			 * パラメータ名の割り出しを行う。
+			 */
+			OptFunctionNode nodeHead = fnCurrent;
+			if (nodeHead == null) {
+				//return;
+			}
+			
+			/**
+			 * 一応、パラメータをもつメソッドを探ってみる
+			 */
+			
+			try {
+				FunctionNode fNode = nodeHead.fnode;
+				//debug.trace("fNode_"+fNode);
+				methodParentName = fNode.getFunctionName();
+				debug.trace("methodParentName_"+methodParentName);
+			} catch (Exception e) {
+				debug.trace("methodParentName_"+null);
+			}
+		}
 //		String scopeName = "";
 //		try {
 //			FunctionNode scopeNode = (FunctionNode)node.getScope();
@@ -5224,20 +5257,28 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 		try {
 			paramName = node.getString();
 			//if (node.getType() == nullNode.getType() ) return;
-			if (paramName.equals("arguments")) {
+			if (paramName.equals("arguments") &&  methodParentName.equals("background")) {
 				debug.trace("argumentsゲット");
+				checkMark = true;
 			}
-			debug.trace("paramName_"+paramName);
+			
+			if (paramName.equals("arguments")) {
+				argumentParamDetectMode = DETECT_DETECTED;
+				argumentParamDetectMethodName = methodParentName;
+			}
+			
 		} catch (Exception e) {
-//			return;
-			debug.trace("paramName_"+"////"+e);
-			//nullとClassCastExceptが出る。どうすっかな。
+			//debug.trace("paramName_"+"////"+e);
 		}
 		
 		
 		
 		if (methodName.equals(CODE_TYPEOF)) {
 			debug.trace("タイプオブ");
+			//この前後で、argument[０]っていう数字が出ているはず!
+			if (checkMark) {
+				debug.trace("checkMarkゲット");
+			}
 		}
 		else if (methodName.equals(CODE_LASTSTOREDSCRIPTABLE)) {
 			debug.trace("ラストストアドスクリプタブル");
@@ -5250,16 +5291,28 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 		}
 		else if (methodName.equals(CODE_CREATEFUNCTIONACTUIVATION)) {
 			debug.trace("クリエイトファンクションアクティベーション");
-//			いきなり、、、メソッドなのにここに来るやつがいる。メソッド登録もここなのかも。
+			argumentParamDetectMode = DETECT_INITIALIZE;
 		}
 		else if (methodName.equals(CODE_ENTERFUNCTIONACTUIVATION)) {
 			debug.trace("エンターファンクションアクティベーション");
 		}
 		else if (methodName.equals(CODE_EXITFUNCTIONACTUIVATION)) {
 			debug.trace("エグジットファンクションアクティベーション");
+			
+			argumentParamDetectMode = DETECT_INITIALIZE;
+			
+			if (checkMark) {
+				checkMark = false;//メソッド内の要素が終了
+				debug.trace("チェックマークが必要");
+			}
 		}
 		else if (methodName.equals(CODE_GETOBJECTELEM)) {
 			debug.trace("ゲットオブジェトエレム");
+			//仮説、argumentの要素を取得しようとしてる？　ここにくるまで、かな。
+			if (checkMark) {
+				debug.trace("チェックマークが必要");
+			}
+			
 		}
 		else if (methodName.equals(CODE_GETOBJECTPROPNOWARN)) {
 			debug.trace("ゲットオブジェクトプロップノーワーン");
@@ -5383,7 +5436,7 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 		//bool
 		else if (methodName.equals(CODE_TOBOOLEAN)) {
 			debug.trace("トゥーブーリアン");
-			col.updateParamByName(paramName, TYPE_ENUM.TYPE_BOOLEAN);
+			//col.updateParamByName(paramName, TYPE_ENUM.TYPE_BOOLEAN);
 		}
 		
 		//数値系
@@ -5409,6 +5462,9 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 		else if (methodName.equals(CODE_NAME)) {
 			debug.trace("ネーム");
 			col.updateParamByName(paramName, TYPE_ENUM.TYPE_STRING);
+			
+			//レベル２だったらレベル３へ
+			
 		}
 		else if (methodName.equals(CODE_SETNAME)) {
 			debug.trace("セットネーム");

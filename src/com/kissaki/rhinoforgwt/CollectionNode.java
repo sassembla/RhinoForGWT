@@ -32,7 +32,7 @@ public class CollectionNode implements CollectionType {
 	 * コンストラクタ
 	 * @param string
 	 */
-	public CollectionNode (String string) {
+	public CollectionNode () {
 		debug = new Debug(this);
 		methodNodeArrayList = new ArrayList<MethodNode>();
 	}
@@ -52,7 +52,6 @@ public class CollectionNode implements CollectionType {
 	
 	/**
 	 * メイン関数の名称を返す。
-	 *動判判定と入力は未完成、、もしかしたら無理かも。
 	 * @return
 	 */
 	public String getMainName() {
@@ -79,7 +78,6 @@ public class CollectionNode implements CollectionType {
 			mNode.setMethodName(string);
 			methodNodeArrayList.add(mNode);
 		}
-		
 	}
 	
 	
@@ -101,11 +99,58 @@ public class CollectionNode implements CollectionType {
 			}
 		}
 		
-		//どのメソッドも持っていないパラメータであれば、グローバルに追加する。
-		//TODO
 	}
 	
-
+	/**
+	 * パラメータの要素をインデックスを元に更新する
+	 * @param methodName
+	 * @param paramIndex
+	 * @param defineType
+	 * @throws IllegalArgumentException
+	 */
+	public void insertParamByIndex(String methodName, int paramIndex, DEFINITION_ENUM defineType) throws IllegalArgumentException {
+		
+		if (methodName.equals(METHOD_NONANE)) return;
+		
+		MethodNode m = null;
+		for (int i = 0; i < methodNodeArrayList.size(); i++) {
+			MethodNode mNode = methodNodeArrayList.get(i);
+			
+			if (mNode.getMethodName().equals(methodName)) {//メソッドノード確定、あとは放り込む
+				if (m == null || m.getpNodeSize() < mNode.getpNodeSize()) {//パラメータ数がより多いものを選ぶ
+					m = mNode;
+				}
+				
+				//引数0のパラメータが指定された時、パラメータ数がすでに1のものがあったら帰る。
+				if (paramIndex+1 == mNode.pNodeArrayList.size()) {//指定したインデックスの値が同じなので、オーバーロードする必然性は無いと判断
+					//TODO　型でもオーバーロードする必要はあるのだが、まだそこまでやってない。
+					return;
+				}
+			}
+		}
+		
+		
+		/**
+		 * 同名のメソッドを探査した時点で、該当する引数のメソッドが存在しなければ、オーバーロードを開始する。
+		 */
+		if (m != null) {
+			//オーバーロード確定。メソッドノード自体をコピーする。
+			MethodNode mNode2 = m.getCopyWithoutParam();
+			
+			for (int j = 0; j < paramIndex+1; j++) {
+				String paramName = mNode2.getMethodName() + TEMPLATE_OVERLOADED + j;
+				
+				//オーバーロードしたメソッドに、パラメータを追加する
+				mNode2.addpNodeParam(paramName, TYPE_ENUM.TYPE_JAVASCRIPTOBJECT, defineType);
+			}
+			
+			//オーバーロードしたメソッドをリストに追加する
+			methodNodeArrayList.add(mNode2);
+			
+			return;
+		}
+		
+	}
 	
 	
 	
@@ -257,32 +302,38 @@ public class CollectionNode implements CollectionType {
 		}
 	}
 	
+	
+	
 	/**
-	 * メソッドの入ったノードを取得する
-	 * 
+	 * メソッド名と、設定されているパラメータの宣言文字列 void メソッド名(A a, B b, C c, ,,) を取得する
+	 * TODO メソッドの型がすべてvoid型
 	 * @param i
 	 * @return
 	 */
-	public String getMethodNode (int i) {
+	public String getMethodHeader (int i) {
 		MethodNode mNode = methodNodeArrayList.get(i);
 		StringBuffer s = new StringBuffer();
 		StringBuffer s2 = new StringBuffer();
 		for (int j = 0; j < mNode.getpNodeSize(); j++) {
 			if (j != 0) s2.append(", ");
-			s2.append(mNode.pNodeArrayList.get(j).getParamType()+" "+mNode.pNodeArrayList.get(j).getParamName());
+			s2.append(mNode.pNodeArrayList.get(j).getParamString()+" "+mNode.pNodeArrayList.get(j).getParamName());//型とパラメータ名
 		}
 		
 		
 		//debug.trace("s2_"+s2);
-		s.append("void"+" "+mNode.methodName+ " ("+s2.toString()+")");
+		s.append(STRING_KEY_PUBLIC + " " +"void"+" "+mNode.methodName+ "("+s2.toString()+")");
 		
 		return s.toString();
 		
 	}
+	
 
-
-
-	public String getMethodExec(int i) {
+	/**
+	 * メソッド内の記述、設定されているパラメータの実行文字列 メソッド名(a,b,c,,,); を取得する
+	 * @param i
+	 * @return
+	 */
+	public String getMethodBody(int i) {
 		MethodNode mNode = methodNodeArrayList.get(i);
 		
 		StringBuffer s2 = new StringBuffer();
@@ -292,9 +343,61 @@ public class CollectionNode implements CollectionType {
 		}
 		
 		StringBuffer s1 = new StringBuffer();
-		s1.append("	"+ TENPLATE_OBJECT +mNode.getMethodName()+"("+ s2.toString() +");");
+		s1.append(MIDDLE_METHODHEADER + mNode.getMethodName() + "("+ s2.toString() +");");
 		return s1.toString();
 	}
+	
+	/**
+	 * Nativeメソッドのヘッダーを取得する
+	 * @param i
+	 * @return
+	 */
+	public String getNativeMethodHeader(int i) {
+		
+		MethodNode mNode = methodNodeArrayList.get(i);
+		StringBuffer s = new StringBuffer();
+		
+		
+		
+		StringBuffer s2 = new StringBuffer();
+		for (int j = 0; j < mNode.getpNodeSize(); j++) {
+			if (j != 0) s2.append(", ");
+			s2.append(mNode.pNodeArrayList.get(j).getParamString() + " " + mNode.pNodeArrayList.get(j).getParamName());
+		}
+		
+		String returnType = CollectionType.STRING_KEY_JAVASCRIPTOBJECT;
+		s.append(STRING_KEY_PRIVATE + " " + STRING_KEY_NATIVE + " " + returnType + " " + MIDDLE_METHODHEADER + mNode.methodName + "("+s2.toString()+")" + STRING_KEY_JSNI_HEADER);
+		
+		return s.toString();
+	}
+
+	public String getNativeMethodBody(String packages, String implementName, int i) {
+		MethodNode mNode = methodNodeArrayList.get(i);
+		StringBuffer s = new StringBuffer();
+		
+		StringBuffer s2 = new StringBuffer();
+		for (int j = 0; j < mNode.getpNodeSize(); j++) {
+			if (j != 0) s2.append(", ");
+			s2.append(mNode.pNodeArrayList.get(j).getParamName());
+		}
+		
+		s.append("this.@" + packages + "." + implementName + "::" + TENPLATE_OBJECT + "()." + mNode.methodName + "(" + s2.toString() + ");");//メソッドと、
+		
+		return s.toString();
+	}
+	
+	
+	
+	/**
+	 * Nativeメソッドのフッターをつける
+	 * @return
+	 */
+	public String getNativeMethodFooter() {
+		return STRING_KEY_JSNI_FOOTER;
+	}
+
+
+	
 
 
 
@@ -316,6 +419,106 @@ public class CollectionNode implements CollectionType {
 	}
 
 
+	/**
+	 * 特定の名称のメソッドをCollectionNodeから削除する
+	 * @param methodNameShouldErase
+	 */
+	public void removeMethodsByNamed(String methodNameShouldErase) {
+		int size;
+		while (true) {
+			size = getMethodNum();//サイズの更新
+			//nodeのサイズが変わりながら、うごくはず。
+			for (int i = 0; i < size; i++) {
+				MethodNode m = methodNodeArrayList.get(i);
+				if (m.getMethodName().equals(methodNameShouldErase)) {
+					methodNodeArrayList.remove(i);
+					break;
+				}
+			}
+			if (getMethodNum() == size) {//開始時のメソッド数と変化していなければ、もう消すものがない、という事
+				break;
+			}
+		}
+	}
 
+
+	/**
+	 * 設定した文字列のメソッドが存在していれば、引数を設定したヘッダーを返す
+	 * 存在しなければ、空の引数のヘッダーを返す
+	 * @param constructorName
+	 * @return
+	 */
+	public String getConstructorMethodHeader(String constructorName) {
+		StringBuffer s2 = new StringBuffer();
+		
+		s2.append(getConstructorMethodBodyParametersTo(constructorName));
+		
+		String header = STRING_KEY_PUBLIC+" "+constructorName+STRING_FILEFOOTER_IMPLEMENTS+"(" + s2.toString() + ")";
+		return header;
+	}
+
+	/**
+	 * 該当するメソッド名から、パラメータ型、パラメータ名の文字列を取得する
+	 * @param constructorName
+	 * @return
+	 */
+	public String getConstructorMethodBodyParametersTo(String constructorName) {
+		StringBuffer s2 = new StringBuffer();
+		
+		for (int i = 0; i < methodNodeArrayList.size(); i++) {
+			MethodNode m = methodNodeArrayList.get(i);
+			
+			if (constructorName.equals(m.getMethodName())) {
+				//メソッドのパラメータ列を取得する
+				for (int j = 0; j < m.getpNodeSize(); j++) {
+					if (j != 0) s2.append(", ");
+					s2.append(m.pNodeArrayList.get(j).getParamString() + " " + m.pNodeArrayList.get(j).getParamName());
+				}
+				break;
+			}
+		}
+		return s2.toString();
+	}
+
+
+
+	/**
+	 * 指定したメソッド名のコンストラクタのボディーを返す
+	 * @param string
+	 * @return
+	 */
+	public String getConstructorMethodBody(String constructorName) {
+		StringBuffer s2 = new StringBuffer();
+		
+		s2.append(getConstructorBodyParametersTo(constructorName));
+		
+		String body = "	"+constructorName+STRING_KEY_JSOBJECT+" = "+STRING_KEY_SETJAVASCRIPTMETHOD_HEADER + constructorName+STRING_KEY_JSOBJECT+"(" + s2.toString() + ");";
+		return body;
+	}
+
+
+	/**
+	 * 該当するメソッドの引数の、名称部分だけを取得する
+	 * @param s2
+	 * @param constructorName
+	 */
+	public String getConstructorBodyParametersTo(String constructorName) {
+		StringBuffer s2 = new StringBuffer();
+		for (int i = 0; i < methodNodeArrayList.size(); i++) {
+			MethodNode m = methodNodeArrayList.get(i);
+			
+			if (constructorName.equals(m.getMethodName())) {//public メソッド１ (JavaScriptObject パラメータ１)
+				//メソッドのパラメータ列を取得する
+				
+				for (int j = 0; j < m.getpNodeSize(); j++) {
+					if (j != 0) s2.append(", ");
+					s2.append(m.pNodeArrayList.get(j).getParamName());
+				}
+				break;
+
+			}
+		}
+		return s2.toString();
+	}
 	
 }
