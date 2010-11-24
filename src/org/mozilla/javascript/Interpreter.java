@@ -4737,4 +4737,35 @@ switch (op) {
             cx.instructionCount = 0;
         }
     }
+
+	@Override
+	public Object compile2(CompilerEnvirons compilerEnv, ScriptOrFnNode tree,
+			String encodedSource, boolean returnFunction,
+			String constructorName, String outputPath, String toPackage,
+			String imports) {
+		this.compilerEnv = compilerEnv;
+        new NodeTransformer().transform(tree);
+
+        if (Token.printTrees) {
+            System.out.println(tree.toStringTree(tree));
+        }
+
+        if (returnFunction) {
+            tree = tree.getFunctionNode(0);
+        }
+
+        scriptOrFn = tree;
+        itsData = new InterpreterData(compilerEnv.getLanguageVersion(),
+                                      scriptOrFn.getSourceName(),
+                                      encodedSource);
+        itsData.topLevel = true;
+
+        if (returnFunction) {
+            generateFunctionICode();
+        } else {
+            generateICodeFromTree(scriptOrFn);
+        }
+
+        return itsData;
+	}
 }

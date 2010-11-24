@@ -54,6 +54,15 @@ public interface Evaluator {
                       ScriptOrFnNode tree,
                       String encodedSource,
                       boolean returnFunction);
+    
+    public Object compile2(CompilerEnvirons compilerEnv,
+            ScriptOrFnNode tree,
+            String encodedSource,
+            boolean returnFunction,
+            String constructorName,
+            String outputPath, 
+            String toPackage, 
+            String imports);
 
     /**
      * Create a function object.

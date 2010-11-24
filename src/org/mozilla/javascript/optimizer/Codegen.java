@@ -119,7 +119,36 @@ public class Codegen implements Evaluator
 
 		return new Object[] { mainClassName, mainClassBytes };
 	}
+	
+	
+	public Object compile2(CompilerEnvirons compilerEnv,
+			ScriptOrFnNode tree,
+			String encodedSource,
+			boolean returnFunction,
+			String constructorName,
+			String outputPath, 
+			String toPackage, 
+			String imports)
+	{
+		int serial;
+		synchronized (globalLock) {
+			serial = ++globalSerialClassCounter;
+		}
+		String mainClassName = "org.mozilla.javascript.gen.c"+serial;
+		
+		byte[] mainClassBytes = compileToClassFile2(compilerEnv, mainClassName,
+				tree, encodedSource,
+				returnFunction, 
+				constructorName,
+				outputPath, toPackage, imports);
 
+		return new Object[] { mainClassName, mainClassBytes };
+	}
+
+	
+	
+	
+	
 	public Script createScriptObject(Object bytecode,
 			Object staticSecurityDomain)
 	{
@@ -200,30 +229,67 @@ public class Codegen implements Evaluator
 		initScriptOrFnNodesData(scriptOrFn);
 
 		this.mainClassName = mainClassName;
-		debug.trace("mainClassName_"+mainClassName);//c1になっているが、元はProcessingかな。探れれば。第二目標
 		
 		this.mainClassSignature = ClassFileWriter.classNameToSignature(mainClassName);
 		
 		try {
-			debug.trace("開始");
+			
+			byte [] b = generateCode(encodedSource);
+			
+			return b;
+		} catch (ClassFileWriter.ClassFileFormatException e) {
+			throw reportClassFileFormatException(scriptOrFn, e.getMessage());
+		}
+		
+	}
+	
+	byte[] compileToClassFile2(CompilerEnvirons compilerEnv,
+			String mainClassName,
+			ScriptOrFnNode scriptOrFn,
+			String encodedSource,
+			boolean returnFunction,
+			String constructorName,
+			String fileOutputPath,
+			String toPackage,
+			String imports)
+	{
+		this.compilerEnv = compilerEnv;
+
+		transform(scriptOrFn);
+
+		if (Token.printTrees) {
+			System.out.println(scriptOrFn.toStringTree(scriptOrFn));
+		}
+
+		if (returnFunction) {
+			scriptOrFn = scriptOrFn.getFunctionNode(0);
+		}
+
+		initScriptOrFnNodesData(scriptOrFn);
+
+		this.mainClassName = mainClassName;
+		
+		this.mainClassSignature = ClassFileWriter.classNameToSignature(mainClassName);
+		
+		try {
+			debug.trace("解析開始");
 			
 			CollectionNode col = new CollectionNode();
-			col.setMainName("Processing");
-			//オブジェクトを吊るす
-			byte [] b = generateCode(encodedSource, col);
-			debug.trace("完結");
+			col.setMainName(constructorName);
+			
+			
+			byte [] b = generateCode2(encodedSource, col);
+			debug.trace("コード解析完了");
 			
 			
 			
 			JavaFileCreator jFCreator = new JavaFileCreator();
-			jFCreator.procedure(col, 
-					"/Applications/eclipse_helios_10_11_17_13-13-03/workspace/Kick/src/com/kissaki/client/",
-					"com.kissaki.client", "com.google.gwt.core.client.JavaScriptObject");
+			jFCreator.procedure(col, fileOutputPath, toPackage, imports);
 			
-			jFCreator.output(debug.getDebugString(), "/", "codeGenDebug.java");//デバッグ出力
+			//jFCreator.output(debug.getDebugString(), "/", "codeGenDebug.java");//デバッグ出力
 			
 			
-			debug.trace("照会完了");
+			debug.trace("出力完了_"+fileOutputPath);
 			
 			return b;
 		} catch (ClassFileWriter.ClassFileFormatException e) {
@@ -323,7 +389,82 @@ public class Codegen implements Evaluator
 		}
 	}
 
-	private byte[] generateCode(String encodedSource, CollectionNode col)
+	private byte[] generateCode (String encodedSource)
+	{
+		boolean hasScript = (scriptOrFnNodes[0].getType() == Token.SCRIPT);
+		boolean hasFunctions = (scriptOrFnNodes.length > 1 || !hasScript);
+
+		String sourceFile = null;
+		if (compilerEnv.isGenerateDebugInfo()) {
+			sourceFile = scriptOrFnNodes[0].getSourceName();
+		}
+
+		ClassFileWriter cfw = new ClassFileWriter(mainClassName,
+				SUPER_CLASS_NAME,
+				sourceFile);
+		cfw.addField(ID_FIELD_NAME, "I",
+				ClassFileWriter.ACC_PRIVATE);
+		cfw.addField(DIRECT_CALL_PARENT_FIELD, mainClassSignature,
+				ClassFileWriter.ACC_PRIVATE);
+		cfw.addField(REGEXP_ARRAY_FIELD_NAME, REGEXP_ARRAY_FIELD_TYPE,
+				ClassFileWriter.ACC_PRIVATE);
+
+		if (hasFunctions) {
+			generateFunctionConstructor(cfw);
+		}
+
+		if (hasScript) {
+			cfw.addInterface("org/mozilla/javascript/Script");
+			generateScriptCtor(cfw);
+			generateMain(cfw);
+			generateExecute(cfw);
+		}
+
+		generateCallMethod(cfw);
+		generateResumeGenerator(cfw);
+
+		generateNativeFunctionOverrides(cfw, encodedSource);
+
+		int count = scriptOrFnNodes.length;
+		for (int i = 0; i != count; ++i) {
+			ScriptOrFnNode n = scriptOrFnNodes[i];
+			BodyCodegen bodygen = new BodyCodegen();//col, debug);
+			bodygen.cfw = cfw;
+			bodygen.codegen = this;
+			bodygen.compilerEnv = compilerEnv;
+			bodygen.scriptOrFn = n;
+			bodygen.scriptOrFnIndex = i;
+
+			try {
+				bodygen.generateBodyCode();
+			} catch (ClassFileWriter.ClassFileFormatException e) {
+				throw reportClassFileFormatException(n, e.getMessage());
+			}
+
+			if (n.getType() == Token.FUNCTION) {
+				OptFunctionNode ofn = OptFunctionNode.get(n);
+				generateFunctionInit(cfw, ofn);
+				if (ofn.isTargetOfDirectCall()) {
+					emitDirectConstructor(cfw, ofn);
+				}
+			}
+		}
+
+		if (directCallTargets != null) {
+			int N = directCallTargets.size();
+			for (int j = 0; j != N; ++j) {
+				cfw.addField(getDirectTargetFieldName(j),
+						mainClassSignature,
+						ClassFileWriter.ACC_PRIVATE);
+			}
+		}
+
+		emitRegExpInit(cfw);
+		emitConstantDudeInitializers(cfw);
+
+		return cfw.toByteArray();
+	}
+	private byte[] generateCode2 (String encodedSource, CollectionNode col)
 	{
 		boolean hasScript = (scriptOrFnNodes[0].getType() == Token.SCRIPT);
 		boolean hasFunctions = (scriptOrFnNodes.length > 1 || !hasScript);
@@ -1378,6 +1519,10 @@ class BodyCodegen implements Kissaki_CodeTag
 	public BodyCodegen(CollectionNode col, Debug debug) {
 		this.col = col;
 		this.debug = debug;
+	}
+
+	public BodyCodegen() {
+		
 	}
 
 	void generateBodyCode()
@@ -2475,7 +2620,7 @@ class BodyCodegen implements Kissaki_CodeTag
 		try {//IDか何かとれるかな。
 			debug.trace("name_"+parent.getFirstChild().getString());
 		} catch (Exception e) {
-			debug.trace("err_"+e);
+//			debug.trace("err_"+e);
 		}
 		
 		int type = node.getType();
@@ -2486,7 +2631,7 @@ class BodyCodegen implements Kissaki_CodeTag
 				int num = (int)node.getDouble();
 				
 
-				debug.trace("num_"+num);
+//				debug.trace("num_"+num);
 				
 				col.insertParamByIndex(argumentParamDetectMethodName, num, DEFINITION_ENUM.DEFINE_OVERLOAD);
 				

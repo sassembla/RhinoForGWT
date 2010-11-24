@@ -95,7 +95,7 @@ public class CollectionNode implements CollectionType {
 			MethodNode mNode = methodNodeArrayList.get(i);
 			
 			if (mNode.getMethodName().equals(methodName)) {//メソッドノード確定、あとは放り込む
-				mNode.addpNodeParam(paramName, TYPE_ENUM.TYPE_JAVASCRIPTOBJECT, defineType);
+				mNode.addpNodeParam(paramName, TYPE_ENUM.getDefaultType(), defineType);
 			}
 		}
 		
@@ -188,8 +188,8 @@ public class CollectionNode implements CollectionType {
 	 * @param paramType
 	 */
 	private void insertParamToGlobal(String paramName, TYPE_ENUM paramType) {
-		insertMethod("");
-		insertParam("", paramName, DEFINITION_ENUM.DEFINE_PARAM);
+		insertMethod(METHOD_NONANE);
+		insertParam(METHOD_NONANE, paramName, DEFINITION_ENUM.DEFINE_PARAM);
 		updateParamByName(paramName, paramType);
 	}
 
@@ -365,7 +365,7 @@ public class CollectionNode implements CollectionType {
 			s2.append(mNode.pNodeArrayList.get(j).getParamString() + " " + mNode.pNodeArrayList.get(j).getParamName());
 		}
 		
-		String returnType = CollectionType.STRING_KEY_JAVASCRIPTOBJECT;
+		String returnType = TYPE_ENUM.getTypeString(TYPE_ENUM.getDefaultType());
 		s.append(STRING_KEY_PRIVATE + " " + STRING_KEY_NATIVE + " " + returnType + " " + MIDDLE_METHODHEADER + mNode.methodName + "("+s2.toString()+")" + STRING_KEY_JSNI_HEADER);
 		
 		return s.toString();
@@ -492,7 +492,7 @@ public class CollectionNode implements CollectionType {
 		
 		s2.append(getConstructorBodyParametersTo(constructorName));
 		
-		String body = "	"+constructorName+STRING_KEY_JSOBJECT+" = "+STRING_KEY_SETJAVASCRIPTMETHOD_HEADER + constructorName+STRING_KEY_JSOBJECT+"(" + s2.toString() + ");";
+		String body = constructorName+STRING_KEY_JSOBJECT+" = "+STRING_KEY_SETJAVASCRIPTMETHOD_HEADER + constructorName+STRING_KEY_JSOBJECT+"(" + s2.toString() + ");";
 		return body;
 	}
 

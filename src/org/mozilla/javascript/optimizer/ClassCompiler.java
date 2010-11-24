@@ -202,6 +202,61 @@ public class ClassCompiler
                               scriptClassName, scriptClassBytes };
     }
 
+    
+    public Object[] compileToClassFiles2(String source,
+            String sourceLocation,
+            int lineno,
+            String mainClassName,
+            String fileOutputPath,
+			String toPackage,
+			String imports)
+	{
+		Parser p = new Parser(compilerEnv, compilerEnv.getErrorReporter());
+		ScriptOrFnNode tree = p.parse(source, sourceLocation, lineno);
+		String encodedSource = p.getEncodedSource();
+		
+		Class<?> superClass = getTargetExtends();
+		Class<?>[] interfaces = getTargetImplements();
+		String scriptClassName;
+		boolean isPrimary = (interfaces == null && superClass == null);
+		if (isPrimary) {
+		scriptClassName = mainClassName;
+		} else {
+		scriptClassName = makeAuxiliaryClassName(mainClassName, "1");
+		}
+		
+		Codegen codegen = new Codegen();
+		codegen.setMainMethodClass(mainMethodClassName);
+		byte[] scriptClassBytes
+		= codegen.compileToClassFile(compilerEnv, scriptClassName,
+		             tree, encodedSource,
+		             false);
+		
+		if (isPrimary) {
+		return new Object[] { scriptClassName, scriptClassBytes };
+		}
+		int functionCount = tree.getFunctionCount();
+		ObjToIntMap functionNames = new ObjToIntMap(functionCount);
+		for (int i = 0; i != functionCount; ++i) {
+		FunctionNode ofn = tree.getFunctionNode(i);
+		String name = ofn.getFunctionName();
+		if (name != null && name.length() != 0) {
+		functionNames.put(name, ofn.getParamCount());
+		}
+		}
+		if (superClass == null) {
+		superClass = ScriptRuntime.ObjectClass;
+		}
+		byte[] mainClassBytes
+		= JavaAdapter.createAdapterCode(
+		functionNames, mainClassName,
+		superClass, interfaces, scriptClassName);
+		
+		return new Object[] { mainClassName, mainClassBytes,
+		  scriptClassName, scriptClassBytes};
+	}
+    
+    
     private String mainMethodClassName;
     private CompilerEnvirons compilerEnv;
     private Class<?> targetExtends;

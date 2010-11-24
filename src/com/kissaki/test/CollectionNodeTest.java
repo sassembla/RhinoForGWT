@@ -118,13 +118,13 @@ public class CollectionNodeTest extends TestCase implements CollectionType {
 	}
 	
 	/**
-	 * 引数のないメソッドを取得するテスト？
+	 * 引数のないメソッドを取得するテスト
 	 * 
 	 */
 	public void testNoArgMethod () {
 		test.insertMethod("メソッド名");
 		String s = test.getMethodBody(0);
-		String s2 = "	"+TENPLATE_OBJECT + "メソッド名"+"();";
+		String s2 = MIDDLE_METHODHEADER + "メソッド名"+"();";
 		assertEquals(s2, s);
 	}
 	
@@ -139,7 +139,7 @@ public class CollectionNodeTest extends TestCase implements CollectionType {
 		test.updateParamByName("パラメータ名１", TYPE_ENUM.TYPE_STRING);
 		
 		String s = test.getMethodBody(0);
-		String s2 = "	"+TENPLATE_OBJECT + "メソッド名"+"(パラメータ名１);";
+		String s2 = MIDDLE_METHODHEADER + "メソッド名"+"(パラメータ名１);";
 		
 		assertEquals(s2, s);
 		
@@ -159,7 +159,7 @@ public class CollectionNodeTest extends TestCase implements CollectionType {
 		
 		
 		String s = test.getMethodBody(0);
-		String s2 = "	"+TENPLATE_OBJECT + "メソッド名"+"(パラメータ名１, パラメータ名２);";
+		String s2 = MIDDLE_METHODHEADER + "メソッド名"+"(パラメータ名１, パラメータ名２);";
 		
 		assertEquals(s2, s);
 		
@@ -183,7 +183,7 @@ public class CollectionNodeTest extends TestCase implements CollectionType {
 		assertTrue("メソッド数が2つではない", test.getMethodNum() == 2);
 		
 		String s3 = test.getMethodBody(1);
-		String s4 = "	"+TENPLATE_OBJECT + "メソッド名"+"(メソッド名"+TEMPLATE_OVERLOADED+"0, メソッド名"+TEMPLATE_OVERLOADED+"1);";
+		String s4 = MIDDLE_METHODHEADER + "メソッド名"+"(メソッド名"+TEMPLATE_OVERLOADED+"0, メソッド名"+TEMPLATE_OVERLOADED+"1);";
 		
 		assertEquals(s4, s3);
 	}
@@ -199,7 +199,7 @@ public class CollectionNodeTest extends TestCase implements CollectionType {
 		assertTrue("メソッド数が2つではない", test.getMethodNum() == 2);
 		
 		String s3 = test.getMethodBody(1);
-		String s4 = "	"+TENPLATE_OBJECT + "メソッド名"+"(メソッド名"+TEMPLATE_OVERLOADED+"0);";
+		String s4 = MIDDLE_METHODHEADER + "メソッド名"+"(メソッド名"+TEMPLATE_OVERLOADED+"0);";
 		
 		assertEquals(s4, s3);
 	}
@@ -215,7 +215,7 @@ public class CollectionNodeTest extends TestCase implements CollectionType {
 		assertTrue("メソッド数が2ではない", test.getMethodNum() == 2);
 		
 		String s3 = test.getMethodBody(1);
-		String s4 = "	"+TENPLATE_OBJECT + "メソッド名"+"("+
+		String s4 = MIDDLE_METHODHEADER + "メソッド名"+"("+
 		"メソッド名"+TEMPLATE_OVERLOADED+"0,"+
 		" メソッド名"+TEMPLATE_OVERLOADED+"1,"+
 		" メソッド名"+TEMPLATE_OVERLOADED+"2,"+
@@ -290,7 +290,7 @@ public class CollectionNodeTest extends TestCase implements CollectionType {
 		
 		//コンストラクタの文章内容がセットされているかチェック
 		String body = test.getConstructorMethodBody("メソッド１");
-		assertEquals("	"+"メソッド１JSObject = setupメソッド１JSObject(パラメータ１);", body);
+		assertEquals("メソッド１JSObject = setupメソッド１JSObject(パラメータ１);", body);
 	}
 	
 	
@@ -314,7 +314,7 @@ public class CollectionNodeTest extends TestCase implements CollectionType {
 		
 		//コンストラクタの文章内容がセットされているかチェック
 		String body = test.getConstructorMethodBody("メソッド２");
-		assertEquals("	"+"メソッド２JSObject = setupメソッド２JSObject();", body);
+		assertEquals("メソッド２JSObject = setupメソッド２JSObject();", body);
 	}
 	
 }

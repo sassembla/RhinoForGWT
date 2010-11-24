@@ -51,7 +51,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.kissaki.rhinoforgwt.JavaFileCreator;
 import com.kissaki.subFrame.Debug;
 
 /**

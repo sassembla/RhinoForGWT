@@ -1325,6 +1325,7 @@ public class Context
 			 // For compatibility IllegalArgumentException can not be thrown here
 			 lineno = 0;
 		 }
+
 		 return (Script) compileImpl(null, in, null, sourceName, lineno,
 				 securityDomain, false, null, null);
 	 }
@@ -1352,10 +1353,34 @@ public class Context
 			 // For compatibility IllegalArgumentException can not be thrown here
 			 lineno = 0;
 		 }
-		 debug.trace("コンパイル開始");
+		
 		 return compileString(source, null, null, sourceName, lineno,
 				 securityDomain);
 	 }
+	 
+	 public final Script compileString2(String source,
+			 String sourceName, int lineno,
+			 Object securityDomain,
+			 
+			 String constructorName,
+			 String outputPath, 
+			 String toPackage, 
+			 String imports)
+	 {
+		 if (lineno < 0) {
+			 // For compatibility IllegalArgumentException can not be thrown here
+			 lineno = 0;
+		 }
+		 debug.trace("コンパイル開始");
+		 return compileString2(source, null, null, sourceName, lineno,
+				 securityDomain,
+				 constructorName,
+				 outputPath, 
+				 toPackage, 
+				 imports);
+	 }
+	 
+	 
 
 	 final Script compileString(String source,
 			 Evaluator compiler,
@@ -1364,6 +1389,7 @@ public class Context
 			 Object securityDomain)
 	 {
 		 try {
+			 
 			 return (Script) compileImpl(null, null, source, sourceName, lineno,
 					 securityDomain, false,
 					 compiler, compilationErrorReporter);
@@ -1373,6 +1399,32 @@ public class Context
 		 }
 	 }
 
+	 final Script compileString2(String source,
+			 Evaluator compiler,
+			 ErrorReporter compilationErrorReporter,
+			 String sourceName, int lineno,
+			 Object securityDomain,
+			 
+			 String constructorName,
+			 String outputPath, 
+			 String toPackage, 
+			 String imports)
+	 {
+		 try {
+			 
+			 return (Script) compileImpl2(null, null, source, sourceName, lineno,
+					 securityDomain, false,
+					 compiler, compilationErrorReporter,
+					 constructorName,
+					 outputPath,
+					 toPackage,
+					 imports
+					 );
+		 } catch (IOException ex) {
+			 // Should not happen when dealing with source as string
+			 throw new RuntimeException();
+		 }
+	 }
 	 /**
 	  * Compile a JavaScript function.
 	  * <p>
@@ -2373,12 +2425,7 @@ public class Context
 		 }
 		 ScriptOrFnNode tree;
 		 if (sourceString != null) {
-			 //TODO ここから解析、Decomplier
 			 tree = p.parse(sourceString, sourceName, lineno);
-
-			 JavaFileCreator jFC = new JavaFileCreator();
-			 jFC.output(p.debug.getDebugString(), "/", "parser.java");
-
 
 		 } else {
 			 tree = p.parse(sourceReader, sourceName, lineno);
@@ -2427,6 +2474,109 @@ public class Context
 
 		 return result;
 	 }
+	 
+	 
+	 private Object compileImpl2(Scriptable scope,
+			 Reader sourceReader, String sourceString,
+			 String sourceName, int lineno,
+			 Object securityDomain, boolean returnFunction,
+			 Evaluator compiler,
+			 ErrorReporter compilationErrorReporter,
+			 String constructorName,
+			 String outputPath, 
+			 String toPackage, 
+			 String imports)
+	 throws IOException
+	 {
+		 if(sourceName == null) {
+			 sourceName = "unnamed script";
+		 }
+		 if (securityDomain != null && getSecurityController() == null) {
+			 throw new IllegalArgumentException(
+					 "securityDomain should be null if setSecurityController() was never called");
+		 }
+
+		 // One of sourceReader or sourceString has to be null
+		 if (!(sourceReader == null ^ sourceString == null)) Kit.codeBug();
+		 // scope should be given if and only if compiling function
+		 if (!(scope == null ^ returnFunction)) Kit.codeBug();
+
+		 CompilerEnvirons compilerEnv = new CompilerEnvirons();
+		 compilerEnv.initFromContext(this);
+		 if (compilationErrorReporter == null) {
+			 compilationErrorReporter = compilerEnv.getErrorReporter();
+		 }
+
+		 if (debugger != null) {
+			 if (sourceReader != null) {
+				 sourceString = Kit.readReader(sourceReader);
+				 sourceReader = null;
+			 }
+		 }
+
+		 Parser p = new Parser(compilerEnv, compilationErrorReporter);
+		 if (returnFunction) {
+			 p.calledByCompileFunction = true;
+		 }
+		 ScriptOrFnNode tree;
+		 if (sourceString != null) {
+			 tree = p.parse(sourceString, sourceName, lineno);
+
+//			 JavaFileCreator jFC = new JavaFileCreator();
+//			 jFC.output(p.debug.getDebugString(), "/", "parser.java");
+
+
+		 } else {
+			 tree = p.parse(sourceReader, sourceName, lineno);
+		 }
+		 if (returnFunction) {
+			 if (!(tree.getFunctionCount() == 1
+					 && tree.getFirstChild() != null
+					 && tree.getFirstChild().getType() == Token.FUNCTION))
+			 {
+				 // XXX: the check just look for the first child
+				 // and allows for more nodes after it for compatibility
+				 // with sources like function() {};;;
+				 throw new IllegalArgumentException(
+						 "compileFunction only accepts source with single JS function: "+sourceString);
+			 }
+		 }
+
+		 if (compiler == null) {
+			 compiler = createCompiler();
+		 }
+
+		 String encodedSource = p.getEncodedSource();
+
+		 //debug.trace("encodedSource_"+encodedSource);
+
+		 Object bytecode = compiler.compile2(compilerEnv,
+				 tree, encodedSource,
+				 returnFunction,
+				 constructorName,
+				 outputPath, toPackage, imports);
+
+		 if (debugger != null) {
+			 if (sourceString == null) Kit.codeBug();
+			 if (bytecode instanceof DebuggableScript) {
+				 DebuggableScript dscript = (DebuggableScript)bytecode;
+				 notifyDebugger_r(this, dscript, sourceString);
+			 } else {
+				 throw new RuntimeException("NOT SUPPORTED");
+			 }
+		 }
+
+		 Object result;
+		 if (returnFunction) {
+			 result = compiler.createFunctionObject(this, scope, bytecode, securityDomain);
+		 } else {
+			 result = compiler.createScriptObject(bytecode, securityDomain);
+		 }
+
+		 return result;
+	 }
+	 
+	 
 
 	 private static void notifyDebugger_r(Context cx, DebuggableScript dscript,
 			 String debugSource)

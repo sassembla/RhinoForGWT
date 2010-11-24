@@ -3,7 +3,6 @@ package com.kissaki.rhinoforgwt;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.PrintWriter;
 
 import com.kissaki.subFrame.Debug;
@@ -15,8 +14,6 @@ import com.kissaki.subFrame.Debug;
  */
 public class JavaFileCreator implements CollectionType {
 	Debug debug = null;
-	
-	
 	
 	
 	String masterName;
@@ -224,14 +221,43 @@ public class JavaFileCreator implements CollectionType {
 			addCR(sb);//改行付き
 			
 		}
+		
+		//ユーティリティメソッド
+		sb.append(getUtilityJSNIMethod());
+		
 		addRightPhrase(sb);//Classフッターを追加
-	
+		
+		
+		
 		debug.assertTrue(getPhraseCount() == 0, "phraseCount != 0 _"+phraseCount);
 		
 		//ファイル出力
 		output(sb.toString(), outputPath, getMasterName()+STRING_FILEFOOTER_IMPLEMENTS+"."+FILE_PATTERN);
 	}
 
+
+
+	/**
+	 * 数値、文字列からJSNIインスタンスを返すメソッドを作成する
+	 * 名前空間的にかぶっていないといいな！
+	 * @return
+	 */
+	private Object getUtilityJSNIMethod() {
+		StringBuffer sb = new StringBuffer();
+		
+
+//		public native JavaScriptObject getJSOFromInt(int i)/*-{
+//			var s = new Object();
+//			s.inat = 100;
+//			return s.inat;
+//		}-*/;
+		
+		
+		sb.append("");
+		
+		
+		return sb.toString();
+	}
 
 
 
@@ -446,7 +472,7 @@ public class JavaFileCreator implements CollectionType {
 	 */
 	public String generateNativeJavaScriptObjectMethod (String name, String parameter, String executeParam) {
 		StringBuffer sb = new StringBuffer();
-		sb.append(STRING_KEY_PRIVATE+ " " + STRING_KEY_NATIVE + " " + STRING_DEFAULT_ARG_TYPE + " " +jSInitializerMethodName(name)+" (");
+		sb.append(STRING_KEY_PRIVATE+ " " + STRING_KEY_NATIVE + " " + STRING_KEY_JAVASCRIPTOBJECT + " " +jSInitializerMethodName(name)+" (");
 		sb.append(parameter);
 		sb.append(")"+ " " + STRING_KEY_JSNI_HEADER);
 		addLeftPhrase(sb);// { を追加

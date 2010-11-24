@@ -69,13 +69,15 @@ public interface CollectionType {
 	public final String MIDDLE_METHODHEADER = "_";//中間メソッドの識別子
 	
 	
-	String STRING_DEFAULT_ARG_TYPE = STRING_KEY_JAVASCRIPTOBJECT;
 	
 	public static final String TYPE_NULL = "null";
 	public static final String TYPE_JAVASCRIPTOBJECT = "JavaScriptObject";
 	public static final String TYPE_STRING = "String";
 	public static final String TYPE_BOOLEAN = "boolean";
 	public static final String TYPE_DOUBLE = "double";
+	
+	String STRING_DEFAULT_ARG_TYPE = TYPE_JAVASCRIPTOBJECT;
+
 	
 	public final String STRING_KEY_JSOBJECT = "JSObject";
 	
@@ -84,7 +86,7 @@ public interface CollectionType {
 			TYPE_JAVASCRIPTOBJECT,
 			TYPE_STRING, 
 			TYPE_BOOLEAN, 
-			TYPE_DOUBLE,//
+			TYPE_DOUBLE,
 	};
 	
 	public enum TYPE_ENUM {
@@ -92,9 +94,25 @@ public interface CollectionType {
 		TYPE_JAVASCRIPTOBJECT,
 		TYPE_STRING, 
 		TYPE_BOOLEAN, 
-		TYPE_DOUBLE,//
+		TYPE_DOUBLE,
 		
 		;
+		
+		/**
+		 * 指定されているデフォルト型を取得する
+		 */
+		public static TYPE_ENUM getDefaultType () {
+			for (int i = 0; i < TypeString.length; i++) {
+				if (TypeString[i].equals(STRING_DEFAULT_ARG_TYPE)) {
+					return getTypeEnum(i);
+				}
+			}
+			
+			return null;
+		}
+		
+		
+		
 		/**
 		 * 入力されたEnum A,Bを比較し、より高位の方を返す
 		 */
@@ -136,6 +154,8 @@ public interface CollectionType {
 			
 			throw new IllegalArgumentException("該当するナンバーのTypeが設定されていない_"+number);
 		}
+		
+		
 		
 		/**
 		 * 該当するEnumのString表現を返す

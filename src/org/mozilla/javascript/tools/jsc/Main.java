@@ -69,12 +69,27 @@ public class Main {
             }
             System.exit(1);
         }
+        
+        
         if (!main.reporter.hasReportedError()) {
             main.processSource(args);
         }
+        
+        String outputPath = args[1];
+        String toPackage = args[2];
+        String imports = args[3];
+        if (!main.reporter.hasReportedError()) {
+        	main.processSource2(args, outputPath, toPackage, imports);
+        }
+        /*
+         * "/Applications/eclipse_helios_10_11_17_13-13-03/workspace/Kick/src/com/kissaki/client/",
+					"com.kissaki.client", "com.google.gwt.core.client.JavaScriptObject");
+         */
     }
 
-    public Main()
+    
+
+	public Main()
     {
         reporter = new ToolErrorReporter(true);
         compilerEnv = new CompilerEnvirons();
@@ -307,6 +322,68 @@ public class Main {
         }
     }
 
+    private void processSource2(String[] filenames, 
+    		String fileOutputPath,
+			String toPackage, 
+			String imports) {
+    	
+    	int i = 0;
+    	String filename = filenames[i];
+        if (!filename.endsWith(".js")) {
+            addError("msg.extension.not.js", filename);
+            return;
+        }
+        File f = new File(filename);
+        String source = readSource(f);
+        if (source == null) return;
+
+        String mainClassName = targetName;
+        if (mainClassName == null) {
+            String name = f.getName();
+            String nojs = name.substring(0, name.length() - 3);
+            mainClassName = getClassName(nojs);
+        }
+        if (targetPackage.length() != 0) {
+            mainClassName = targetPackage+"."+mainClassName;
+        }
+
+        Object[] compiled
+            = compiler.compileToClassFiles2(source, filename, 1,
+                                           mainClassName,
+                                           fileOutputPath,
+                                           toPackage,
+                                           imports);
+        if (compiled == null || compiled.length == 0) {
+            return;
+        }
+
+        File targetTopDir = null;
+        if (destinationDir != null) {
+            targetTopDir = new File(destinationDir);
+        } else {
+            String parent = f.getParent();
+            if (parent != null) {
+                targetTopDir = new File(parent);
+            }
+        }
+        for (int j = 0; j != compiled.length; j += 2) {
+            String className = (String)compiled[j];
+            byte[] bytes = (byte[])compiled[j + 1];
+            File outfile = getOutputFile(targetTopDir, className);
+            try {
+                FileOutputStream os = new FileOutputStream(outfile);
+                try {
+                    os.write(bytes);
+                } finally {
+                    os.close();
+                }
+            } catch (IOException ioe) {
+                addFormatedError(ioe.toString());
+            }
+        }
+		
+	}
+    
     private String readSource(File f)
     {
         String absPath = f.getAbsolutePath();
