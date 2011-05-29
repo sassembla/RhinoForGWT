@@ -141,7 +141,7 @@ public class CollectionNode implements CollectionType {
 				String paramName = mNode2.getMethodName() + TEMPLATE_OVERLOADED + j;
 				
 				//オーバーロードしたメソッドに、パラメータを追加する
-				mNode2.addpNodeParam(paramName, TYPE_ENUM.TYPE_JAVASCRIPTOBJECT, defineType);
+				mNode2.addpNodeParam(paramName, TYPE_ENUM.getDefaultTypeEnum(), defineType);
 			}
 			
 			//オーバーロードしたメソッドをリストに追加する

@@ -70,31 +70,30 @@ public interface CollectionType {
 	
 	
 	
-	public static final String TYPE_NULL = "null";
-	public static final String TYPE_JAVASCRIPTOBJECT = "JavaScriptObject";
-	public static final String TYPE_STRING = "String";
-	public static final String TYPE_BOOLEAN = "boolean";
-	public static final String TYPE_DOUBLE = "double";
+	public static final String TYPENAME_NULL = "null";
+	public static final String TYPENAME_JAVASCRIPTOBJECT = "JavaScriptObject";
+	public static final String TYPENAME_STRING = "String";
+	public static final String TYPENAME_BOOLEAN = "boolean";
+	public static final String TYPENAME_DOUBLE = "double";
 	
-	String STRING_DEFAULT_ARG_TYPE = TYPE_JAVASCRIPTOBJECT;
-
+	
 	
 	public final String STRING_KEY_JSOBJECT = "JSObject";
 	
 	String TypeString [] = {
-			TYPE_NULL,
-			TYPE_JAVASCRIPTOBJECT,
-			TYPE_STRING, 
-			TYPE_BOOLEAN, 
-			TYPE_DOUBLE,
+			TYPENAME_NULL,
+		//	TYPENAME_JAVASCRIPTOBJECT,
+			TYPENAME_STRING, 
+			TYPENAME_BOOLEAN, 
+			TYPENAME_DOUBLE,
 	};
 	
 	public enum TYPE_ENUM {
-		TYPE_NULL,
-		TYPE_JAVASCRIPTOBJECT,
-		TYPE_STRING, 
-		TYPE_BOOLEAN, 
-		TYPE_DOUBLE,
+		TYPEENUM_NULL,
+		//TYPEENUM_JAVASCRIPTOBJECT,
+		TYPEENUM_STRING, 
+		TYPEENUM_BOOLEAN, 
+		TYPEENUM_DOUBLE,
 		
 		;
 		
@@ -173,6 +172,13 @@ public interface CollectionType {
 			}
 			throw new IllegalArgumentException("該当する種類のTypeが設定されていない_"+expression);
 		}
+
+		static TYPE_ENUM STRING_DEFAULT_ENUM_TYPE = TYPEENUM_STRING;
+		static String STRING_DEFAULT_ARG_TYPE = TYPENAME_STRING;
+
+		public static TYPE_ENUM getDefaultTypeEnum() {
+			return STRING_DEFAULT_ENUM_TYPE;
+		}
 		
 		
 	}
@@ -198,16 +204,6 @@ public interface CollectionType {
 	public enum METHOD_TYPE {
 		METHOD_NONAME,
 		METHOD_NORMAL;
-		/**
-		 * メソッド名を入力すると、用意しておいた無名メソッド名との干渉を感知し、無名メソッド名を返す
-		 * どこで行い、どこに値を保存するか、が問題か。固定しておけるといいんだけれど、保存は出来ないからなあ。どこかに乱数を返すクラスを作るか？
-		 * →
-		 * @param typeA
-		 * @return
-		 */
-//		public static METHOD_TYPE getHighType (TYPE_ENUM typeA) {
-//			return null;
-//		}
 		
 		/**
 		 * 匿名メソッドの名称を返す
@@ -219,5 +215,6 @@ public interface CollectionType {
 	}
 	
 	public static final String NAME_NULL = "";//無名のパラメータ（JSには存在しない、、筈）
+	
 	
 }

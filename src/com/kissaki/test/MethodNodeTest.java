@@ -45,7 +45,7 @@ public class MethodNodeTest extends TestCase {
 	 */
 	public void testGetpNodeSize() {
 		for (int i = 0; i < 10; i++) {
-			test.addpNodeParam("メソッド名_"+i, TYPE_ENUM.TYPE_STRING, DEFINITION_ENUM.DEFINE_ARG);
+			test.addpNodeParam("メソッド名_"+i, TYPE_ENUM.TYPEENUM_STRING, DEFINITION_ENUM.DEFINE_ARG);
 		}
 		
 		assertEquals(10, test.getpNodeSize());
@@ -73,9 +73,9 @@ public class MethodNodeTest extends TestCase {
 
 		
 		TYPE_ENUM type [] = {
-				TYPE_ENUM.TYPE_STRING,
-				TYPE_ENUM.TYPE_BOOLEAN,
-				TYPE_ENUM.TYPE_DOUBLE,
+				TYPE_ENUM.TYPEENUM_STRING,
+				TYPE_ENUM.TYPEENUM_BOOLEAN,
+				TYPE_ENUM.TYPEENUM_DOUBLE,
 		};
 		
 		for (int i = 0; i < name.length; i++) {
@@ -107,7 +107,7 @@ public class MethodNodeTest extends TestCase {
 	}
 	
 	public void testIsParamAlerdyUseT1 () {
-		test.addpNodeParam("パラメータ名1", TYPE_ENUM.TYPE_STRING, DEFINITION_ENUM.DEFINE_ARG);
+		test.addpNodeParam("パラメータ名1", TYPE_ENUM.TYPEENUM_STRING, DEFINITION_ENUM.DEFINE_ARG);
 		boolean b = test.isParamAlerdyUse("パラメータ名1");
 		assertEquals(true, b);//同じパラメータ名の型、regナンバーなので、既に或るという意味でtrue 1
 	}
@@ -116,7 +116,7 @@ public class MethodNodeTest extends TestCase {
 	
     
     public void testHasParam() {
-    	test.addpNodeParam("パラメータ",  TYPE_ENUM.TYPE_STRING, DEFINITION_ENUM.DEFINE_ARG);
+    	test.addpNodeParam("パラメータ",  TYPE_ENUM.TYPEENUM_STRING, DEFINITION_ENUM.DEFINE_ARG);
 		
     	boolean b = false;
     	if (test.hasParam("パラメータ") != null) {
@@ -130,9 +130,9 @@ public class MethodNodeTest extends TestCase {
      * getParamTypeのテスト
      */
     public void testGetparamType () {
-    	test.addpNodeParam("パラメータ",  TYPE_ENUM.TYPE_STRING, DEFINITION_ENUM.DEFINE_ARG);
+    	test.addpNodeParam("パラメータ",  TYPE_ENUM.TYPEENUM_STRING, DEFINITION_ENUM.DEFINE_ARG);
 		
-    	assertTrue("タイプ一致しない",test.getParamType("パラメータ") == TYPE_ENUM.TYPE_STRING);
+    	assertTrue("タイプ一致しない",test.getParamType("パラメータ") == TYPE_ENUM.TYPEENUM_STRING);
     	
 	}
     
@@ -140,10 +140,10 @@ public class MethodNodeTest extends TestCase {
      * 入力したパラメータの更新が出来るか
      */
     public void testUpdateParam () {
-    	test.addpNodeParam("パラメータ",  TYPE_ENUM.TYPE_STRING, DEFINITION_ENUM.DEFINE_ARG);
+    	test.addpNodeParam("パラメータ",  TYPE_ENUM.TYPEENUM_STRING, DEFINITION_ENUM.DEFINE_ARG);
 		
-    	test.updateParam("パラメータ", TYPE_ENUM.TYPE_DOUBLE);
-    	assertTrue("型が一致しない", test.getParamType("パラメータ") == TYPE_ENUM.TYPE_DOUBLE);
+    	test.updateParam("パラメータ", TYPE_ENUM.TYPEENUM_DOUBLE);
+    	assertTrue("型が一致しない", test.getParamType("パラメータ") == TYPE_ENUM.TYPEENUM_DOUBLE);
     }
     
 }

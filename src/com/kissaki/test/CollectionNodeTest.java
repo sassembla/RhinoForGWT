@@ -96,9 +96,9 @@ public class CollectionNodeTest extends TestCase implements CollectionType {
 		test.insertMethod("メソッド名");
 		test.insertParam("メソッド名", "パラメータ1", DEFINITION_ENUM.DEFINE_ARG);
 		
-		test.updateParamByName("パラメータ1", TYPE_ENUM.TYPE_STRING);//str_type型をセット
+		test.updateParamByName("パラメータ1", TYPE_ENUM.TYPEENUM_STRING);//str_type型をセット
 		TYPE_ENUM typeName [] = test.getNowMethodParameterTypes("メソッド名");
-		assertEquals(TYPE_ENUM.TYPE_STRING, typeName[0]);//メソッドのパラメータの型が一致
+		assertEquals(TYPE_ENUM.TYPEENUM_STRING, typeName[0]);//メソッドのパラメータの型が一致
 	}
 	
 	
@@ -110,10 +110,10 @@ public class CollectionNodeTest extends TestCase implements CollectionType {
 		test.insertMethod("メソッド名");
 		test.insertParam("メソッド名", "パラメータ1", DEFINITION_ENUM.DEFINE_ARG);
 		
-		test.updateParamByName("パラメータ2", TYPE_ENUM.TYPE_STRING);//存在しない名称パラメータへとstr_type型をセット、グローバルとして扱われる。
+		test.updateParamByName("パラメータ2", TYPE_ENUM.TYPEENUM_STRING);//存在しない名称パラメータへとstr_type型をセット、グローバルとして扱われる。
 		
 		TYPE_ENUM typeName [] = test.getNowMethodParameterTypes("");//匿名メソッド
-		assertEquals(TYPE_ENUM.TYPE_STRING, typeName[0]);//メソッドのパラメータの型が一致
+		assertEquals(TYPE_ENUM.TYPEENUM_STRING, typeName[0]);//メソッドのパラメータの型が一致
 		
 	}
 	
@@ -136,7 +136,7 @@ public class CollectionNodeTest extends TestCase implements CollectionType {
 	public void testInsertParam2 () {
 		test.insertMethod("メソッド名");
 		test.insertParam("メソッド名", "パラメータ名１", DEFINITION_ENUM.DEFINE_ARG);//引数がある
-		test.updateParamByName("パラメータ名１", TYPE_ENUM.TYPE_STRING);
+		test.updateParamByName("パラメータ名１", TYPE_ENUM.TYPEENUM_STRING);
 		
 		String s = test.getMethodBody(0);
 		String s2 = MIDDLE_METHODHEADER + "メソッド名"+"(パラメータ名１);";
@@ -152,10 +152,10 @@ public class CollectionNodeTest extends TestCase implements CollectionType {
 	public void testInsertParam3 () {
 		test.insertMethod("メソッド名");
 		test.insertParam("メソッド名", "パラメータ名１", DEFINITION_ENUM.DEFINE_ARG);//引数がある
-		test.updateParamByName("パラメータ名１", TYPE_ENUM.TYPE_STRING);
+		test.updateParamByName("パラメータ名１", TYPE_ENUM.TYPEENUM_STRING);
 		
 		test.insertParam("メソッド名", "パラメータ名２", DEFINITION_ENUM.DEFINE_ARG);//引数がある
-		test.updateParamByName("パラメータ名２", TYPE_ENUM.TYPE_STRING);
+		test.updateParamByName("パラメータ名２", TYPE_ENUM.TYPEENUM_STRING);
 		
 		
 		String s = test.getMethodBody(0);

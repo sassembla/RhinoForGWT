@@ -5573,7 +5573,7 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 		//JSObject
 		else if (methodName.equals(CODE_BIND)) {
 			debug.trace("バインド");
-			col.updateParamByName(paramName, TYPE_ENUM.TYPE_JAVASCRIPTOBJECT);
+			//col.updateParamByName(paramName, TYPE_ENUM.TYPEENUM_JAVASCRIPTOBJECT);
 		}
 		
 		
@@ -5587,37 +5587,34 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 		//数値系
 		else if (methodName.equals(CODE_TOINT32)) {
 			debug.trace("トゥーイント32");
-			col.updateParamByName(paramName, TYPE_ENUM.TYPE_DOUBLE);
+			col.updateParamByName(paramName, TYPE_ENUM.TYPEENUM_DOUBLE);
 		}
 		else if (methodName.equals(CODE_TOUINT32)) {
 			debug.trace("トゥーアンサインドイント32");
-			col.updateParamByName(paramName, TYPE_ENUM.TYPE_DOUBLE);
+			col.updateParamByName(paramName, TYPE_ENUM.TYPEENUM_DOUBLE);
 		}
 		else if (methodName.equals(CODE_WRAPINT)) {//ok2
 			debug.trace("ラップイント");
-			col.updateParamByName(paramName, TYPE_ENUM.TYPE_DOUBLE);
+			col.updateParamByName(paramName, TYPE_ENUM.TYPEENUM_DOUBLE);
 		}
 		else if (methodName.equals(CODE_TONUMBER)) {//ok
 			debug.trace("トゥーナンバー_"+methodName);
-			col.updateParamByName(paramName, TYPE_ENUM.TYPE_DOUBLE);
+			col.updateParamByName(paramName, TYPE_ENUM.TYPEENUM_DOUBLE);
 		}
 		
 		
 		//文字列系
 		else if (methodName.equals(CODE_NAME)) {
 			debug.trace("ネーム");
-			col.updateParamByName(paramName, TYPE_ENUM.TYPE_STRING);
-			
-			//レベル２だったらレベル３へ
-			
+			col.updateParamByName(paramName, TYPE_ENUM.TYPEENUM_STRING);
 		}
 		else if (methodName.equals(CODE_SETNAME)) {
 			debug.trace("セットネーム");
-			col.updateParamByName(paramName, TYPE_ENUM.TYPE_STRING);
+			col.updateParamByName(paramName, TYPE_ENUM.TYPEENUM_STRING);
 		}
 		else if (methodName.equals(CODE_EQ)) {
 			debug.trace("イコール");
-			col.updateParamByName(paramName, TYPE_ENUM.TYPE_STRING);
+			col.updateParamByName(paramName, TYPE_ENUM.TYPEENUM_STRING);
 		}
 		
 		
@@ -5838,35 +5835,5 @@ Else pass the JS object in the aReg and 0.0 in the dReg.
 		public List<Integer> jsrPoints  = new ArrayList<Integer>();
 		public int tableLabel = 0;        
 	}
-
-
-
-
-
-
-	//    final CollectionNode cNode;//コレクション用のノード
-	//	final CounterClass counterClass;
-
-	/**
-	 * 新設メソッド、メソッド名とパラメータ名の取得、あと型がだせれば完璧
-	 * ここに出てくる部分は重複しない状態のため、信頼が出来る。さてはて？
-	 * @param comment 
-	 * 
-	 * @param fnCurrent 最適化ずみのノード
-	 * @param i パラメータのナンバリング
-	 * @param reg  レジスタへのセットされているNo.　あとで一致を見る。
-	 * @param defineType 
-	 */
-	//	private void collectionFunctionParam(String comment, OptFunctionNode fnCurrent2, int i, short reg, DEFINITION_ENUM defineType) {
-	//		
-	////		debug.trace("functionName_"+fnCurrent.fnode.getFunctionName()+"_end");
-	//		
-	//		ArrayList<Symbol> ls = fnCurrent.fnode.symbols;
-	//		if (0 < ls.size()) {
-	//			Symbol symbol = ls.get(i);
-	//			debug.trace(comment+"_function_symbol["+i+"]_"+symbol.name()+"/レジスタのアドレスは_"+reg);
-	//			cNode.insertParam(symbol.name(), reg, defineType);
-	//		}
-	//	}
 
 }

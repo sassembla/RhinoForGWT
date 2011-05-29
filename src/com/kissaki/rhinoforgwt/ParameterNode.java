@@ -19,7 +19,7 @@ public class ParameterNode implements CollectionType {
 	 */
 	public ParameterNode () {
 		setParamName(NAME_NULL);//無名として登録
-		setParamType(CollectionType.TYPE_ENUM.TYPE_NULL);//無名として登録
+		setParamType(CollectionType.TYPE_ENUM.TYPEENUM_NULL);//無名として登録
 		setDefineType(CollectionType.DEFINITION_ENUM.NO_DEFINITION);//型が無い状態で登録　argかparam
 	}
 

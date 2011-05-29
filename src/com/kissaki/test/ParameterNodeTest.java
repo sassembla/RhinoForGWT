@@ -8,7 +8,6 @@ import com.kissaki.subFrame.Debug;
 
 /**
  * ノードテスト
- * やっぱ先にテストクラス書くべきだな
  * @author sassembla
  *
  */
@@ -57,24 +56,24 @@ public class ParameterNodeTest extends TestCase implements CollectionType {
 	 */
 	public void testSetTypeParam () {
 		
-		test.setParamType(TYPE_ENUM.TYPE_JAVASCRIPTOBJECT);//弱
-		test.setParamType(TYPE_ENUM.TYPE_STRING);//強
+		test.setParamType(TYPE_ENUM.TYPEENUM_BOOLEAN);//弱
+		test.setParamType(TYPE_ENUM.TYPEENUM_STRING);//強
 		
 		TYPE_ENUM nowType = test.getParamType();
 		
-		assertEquals(TYPE_ENUM.TYPE_STRING, nowType);
+		assertEquals(TYPE_ENUM.TYPEENUM_STRING, nowType);
 	}
 	/**
 	 * タイプ型へのセットのテスト、型の転落を防ぐ（より下位のクラスに落ち着くようにする）
 	 */
 	public void testSetTypeParam2 () {
 		
-		test.setParamType(TYPE_ENUM.TYPE_STRING);//強
-		test.setParamType(TYPE_ENUM.TYPE_JAVASCRIPTOBJECT);//弱
+		test.setParamType(TYPE_ENUM.TYPEENUM_STRING);//強
+		test.setParamType(TYPE_ENUM.TYPEENUM_BOOLEAN);//弱
 		
 		TYPE_ENUM nowType = test.getParamType();
 		
-		assertEquals(TYPE_ENUM.TYPE_STRING, nowType);
+		assertEquals(TYPE_ENUM.TYPEENUM_STRING, nowType);
 	}
 	
 	
